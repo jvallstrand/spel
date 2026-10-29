@@ -265,7 +265,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.6';
+const APP_VERSION='0.7';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1151,7 +1151,7 @@ const HORSE_LINES={
   lose:['Domarna har dålig smak.','Nästa gång tar vi dem!']};
 const QUESTS=[
   {id:'hay',t:'Gå till stallet och ge {h} hö',r:10},{id:'water',t:'Ge {h} vatten',r:10},{id:'brush',t:'Borsta {h} tills pälsen glänser',r:15},
-  {id:'muck',t:'Mocka boxen 💩',r:15},{id:'hage',t:'Ta ut {h} och släpp ut i hagen',r:15},{id:'ride',t:'Hämta {h} i hagen och sitt upp',r:10},
+  {id:'muck',t:'Mocka boxen 💩 (tryck Mocka i boxen)',r:15},{id:'hage',t:'Ta ut {h} och släpp ut i hagen',r:15},{id:'ride',t:'Hämta {h} i hagen och sitt upp',r:10},
   {id:'jump',t:'Hoppa ett hinder på ridbanan',r:20},{id:'beach',t:'Rid till stranden och plaska i vattenbrynet',r:25},
   {id:'shoe',t:'Hitta en gyllene hästsko',r:15},{id:'comp',t:'Åk på tävling med bilen',r:30}];
 const RQ=[{id:'fetch',t:'Kasta pinne till hunden 🦴',r:10},{id:'jump3',t:'Hoppa 3 hinder utan rivning',r:20,n:3},{id:'treat',t:'Ge {h} en morot eller ett äpple',r:10},{id:'brush',t:'Borsta {h}',r:15},
@@ -1356,7 +1356,7 @@ function pickShoes(dt){const p=G.ride>=0?G.horses[G.ride].pos:player.pos,r=G.rid
 
 // ---------- uppdrag ----------
 function curQuest(){if(S.quest<QUESTS.length)return QUESTS[S.quest];if(!S.rq)S.rq=newRQ();return S.rq}
-function newRQ(last){let pool=RQ.filter(q=>q.id!==last);if(S.shoes.length<SHOES.list.length)pool.push({id:'shoe',t:'Hitta en gyllene hästsko',r:15});const q=Object.assign({},pick(pool));q.c=0;return q}
+function newRQ(last){let pool=RQ.filter(q=>q.id!==last&&!(q.id==='muck'&&G.horses.every(h=>h.d.dirt===0))&&!(q.id==='brush'&&G.horses.every(h=>h.d.st.clean>90)));if(S.shoes.length<SHOES.list.length)pool.push({id:'shoe',t:'Hitta en gyllene hästsko',r:15});const q=Object.assign({},pick(pool));q.c=0;return q}
 function quest(id){if(S.questsOff)return;const q=curQuest();if(!q||q.id!==id)return;if(q.n){q.c=id==='jump3'?(G.streak||0):(q.c||0)+1;if(id==='gallop'){q.c=q.n;G.horses.forEach(h=>h.galT=0)}if(q.c<q.n){renderQuest();return}}
   S.money+=q.r;Snd.quest();setTimeout(()=>toast('Uppdrag klart! 🎯','+'+q.r+' 🪙'),500);
   if(S.quest<QUESTS.length)S.quest++;else S.rq=newRQ(q.id);
@@ -1665,15 +1665,15 @@ function renderCare(){const w=$('#careBtns');renderStats($('#careStats'),G.care.
   w.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>careAct(b.dataset.c))}
 function careHint(t){const e=$('#careHint');if(!t){e.hidden=true;return}e.hidden=false;e.innerHTML=t}
 function needBuy(what){Snd.sad();note('Slut på '+what+'! Köp mer i butiken 🛒')}
-function careAct(id){const h=G.care,st=h.d.st,s=S.sup,bx=boxOf(h);if(!h||G.sub)return;Snd.click();h.d.ready=h.d.ready||{};
+function careAct(id){const h=G.care;if(!h||G.sub)return;const st=h.d.st,s=S.sup,bx=boxOf(h);Snd.click();h.d.ready=h.d.ready||{};
   if(id==='prephay'){if(h.d.ready.hay)return toast('Höet ligger redan i 🌾');if(s.hay<=0)return needBuy('hö');s.hay--;h.d.ready.hay=true;STABLE.hay[h.i].visible=true;PT.emit('hay',bx-1.85,.4,-17.05,16,{r:.6});toast('Hö framdukat! 🌾',h.d.name+' äter när hon kommer in');renderCare();saveGame();return}
   if(id==='prepwater'){if(h.d.ready.water)return toast('Vattnet är redan fyllt 💧');h.d.ready.water=true;h.drinkT=2;Snd.slurp();PT.emit('splash',bx-2.05,1.2,-19.3,10,{size:.5});toast('Vatten fyllt! 💧');renderCare();saveGame();return}
   if(id==='hay'){if(s.hay<=0)return needBuy('hö');s.hay--;st.hunger=Math.min(100,st.hunger+35);STABLE.hay[h.i].visible=true;h.eatT=7;PT.emit('hay',bx-1.85,.4,-17.05,16,{r:.6});Snd.munch();if(st.hunger>92)say(h,'full',true);quest('hay')}
   else if(id==='feed'){if(s.feed<=0)return needBuy('kraftfoder');s.feed--;st.hunger=Math.min(100,st.hunger+18);st.energy=Math.min(100,st.energy+30);STABLE.feed[h.i].visible=true;h.eatT=5;Snd.munch();say(h,['Krisp-krasp! ⚡','Energi-boost!'],true)}
   else if(id==='water'){st.thirst=100;h.drinkT=2;Snd.slurp();PT.emit('splash',bx-2.05,1.2,-19.3,10,{size:.5});quest('water');say(h,['Ahh, perfekt temperatur.','Glugg glugg 💧'],true)}
-  else if(id==='brush'){const n=h.m.dirt.filter(d=>d.o.visible).length;if(!n){toast('Redan skinande ren! ✨');st.mood=Math.min(100,st.mood+3);return}startSub('brush')}
+  else if(id==='brush'){const n=h.m.dirt.filter(d=>d.o.visible).length;if(!n){toast('Redan skinande ren! ✨');st.mood=Math.min(100,st.mood+3);quest('brush');return}startSub('brush')}
   else if(id==='hoof')startSub('hoof');
-  else if(id==='muck'){if(h.d.dirt<=0){toast('Boxen är redan ren! 🌟');return}startSub('muck')}
+  else if(id==='muck'){if(h.d.dirt<=0){toast('Boxen är redan ren! 🌟');quest('muck');return}startSub('muck')}
   else if(id==='carrot'||id==='apple'){if(s[id]<=0)return needBuy(id==='carrot'?'morötter':'äpplen');s[id]--;st.mood=Math.min(100,st.mood+15);st.hunger=Math.min(100,st.hunger+4);h.happyT=2.5;h.look=.7;setTimeout(()=>h.look=0,2600);
     const hp=new V3();h.m.head.getWorldPosition(hp);PT.emit('heart',hp.x,hp.y+.4,hp.z,10,{r:.6});Snd.munch();say(h,'treat',true);quest('treat')}
   else if(id==='acc'){G.sub='acc';renderCare();return}
