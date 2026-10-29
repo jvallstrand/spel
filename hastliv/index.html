@@ -265,7 +265,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.8';
+const APP_VERSION='0.9';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1919,6 +1919,22 @@ const SHOPITEMS=[
 const CARCOLORS=['#ff4f9a','#8a5cff','#2fd6a6','#ffcf33','#3fa8ff','#ff5a4f','#2b2b33','#ffffff'];
 let SHOPTAB='Foder';
 function openShop(){openModal('#mShop');renderShop()}
+// ---------- bilder av djuren till butiken ----------
+const THUMBS={};let THUMB_RT=null;
+function renderThumb(obj,cam,look){const W=192;if(!THUMB_RT)THUMB_RT=new THREE.WebGLRenderTarget(W,W);
+  const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xffffff,0xb0c8a0,.75));const dl=new THREE.DirectionalLight(0xfff2dc,.85);dl.position.set(3,5,4);sc.add(dl);sc.add(obj);
+  const c=new THREE.PerspectiveCamera(30,1,.05,50);c.position.set(cam[0],cam[1],cam[2]);c.lookAt(look[0],look[1],look[2]);
+  const oc=new THREE.Color();renderer.getClearColor(oc);const oa=renderer.getClearAlpha(),os=renderer.shadowMap.enabled;
+  renderer.shadowMap.enabled=false;renderer.setClearColor(0x000000,0);renderer.setRenderTarget(THUMB_RT);renderer.clear();renderer.render(sc,c);
+  const buf=new Uint8Array(W*W*4);renderer.readRenderTargetPixels(THUMB_RT,0,0,W,W,buf);renderer.setRenderTarget(null);renderer.setClearColor(oc,oa);renderer.shadowMap.enabled=os;
+  const cv=document.createElement('canvas');cv.width=cv.height=W;const ctx=cv.getContext('2d'),img=ctx.createImageData(W,W);
+  for(let y=0;y<W;y++)img.data.set(buf.subarray((W-1-y)*W*4,(W-y)*W*4),y*W*4);ctx.putImageData(img,0,0);return cv.toDataURL('image/png')}
+function thumbDog(type){if(THUMBS['d'+type])return THUMBS['d'+type];const d=makeDog(type),z=DOGTYPES[type].sz*Math.max(1,DOGTYPES[type].len*.85);d.g.rotation.y=1.85;d.animate(0,{speed:0,wag:true});
+  return THUMBS['d'+type]=renderThumb(d.g,[1.55*z,.95*z,1.85*z],[.1*z,.4*DOGTYPES[type].sz,-.03*z])}
+function thumbHorse(breed){if(THUMBS['h'+breed])return THUMBS['h'+breed];const dd=newHorseData('x',breed);
+  Object.assign(dd,{hast:{coat:'brun',face:'blaze',socks:'front'},ponny:{coat:'fux',mane:'#f6ecd0',face:'star',socks:'none'},island:{coat:'skimmel',mane:'#1b1517',face:'none',socks:'none'},mini:{coat:'palomino',face:'blaze',socks:'all'},unicorn:{coat:'vit',mane:'rainbow',face:'none',socks:'none'}}[breed]||{});
+  dd.pattern='none';const m=makeHorse(dd);m.setTack(false);m.g.rotation.y=1.9;m.animate(0,{speed:0});const s=breedOf(breed).s;
+  return THUMBS['h'+breed]=renderThumb(m.g,[3.5*s,2.1*s,4.4*s],[.35*s,1.15*s,-.12*s])}
 function renderShop(){$$('.mcoins').forEach(e=>e.textContent=S.money);const tabs=['Foder','Godis','Prylar','Hästar','Hundar'];
   $('#shopTabs').innerHTML=tabs.map(t=>`<button class="${t===SHOPTAB?'on':''}">${t}</button>`).join('');$('#shopTabs').querySelectorAll('button').forEach((b,i)=>b.onclick=()=>{SHOPTAB=tabs[i];Snd.click();renderShop()});
   const items=SHOPITEMS.filter(i=>i.tab===SHOPTAB);const inv={hay:S.sup.hay,feed:S.sup.feed,shav:S.sup.shav,carrot:S.sup.carrot,apple:S.sup.apple};
@@ -1928,7 +1944,8 @@ function renderShop(){$$('.mcoins').forEach(e=>e.textContent=S.money);const tabs
     else if(i.dog&&S.dogs.length>=4)btn='<button class="btn" disabled>Max 4 hundar</button>';
     else if(i.horse&&S.horses.length>=L.boxes.length)btn='<button class="btn" disabled>Stallet är fullt</button>';
     else btn=`<button class="btn ${S.money>=i.p?'':'white'}" data-buy="${i.id}">${i.p} 🪙</button>`;
-    return `<div class="item"><div class="em">${i.em}</div><b>${i.n}</b><span>${i.d}${inv[i.id]!==undefined?' · har '+inv[i.id]:''}${i.paint?' · '+i.p+' 🪙':''}</span>${btn}</div>`}).join('');
+    const th=i.dog?thumbDog(i.dog):i.horse?thumbHorse(i.horse):null;
+    return `<div class="item"><div class="em">${th?`<img src="${th}" alt="" style="width:96px;height:96px;display:block">`:i.em}</div><b>${i.n}</b><span>${i.d}${inv[i.id]!==undefined?' · har '+inv[i.id]:''}${i.paint?' · '+i.p+' 🪙':''}</span>${btn}</div>`}).join('');
   $('#shopGrid').querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(SHOPITEMS.find(i=>i.id===b.dataset.buy)));
   $('#shopGrid').querySelectorAll('[data-paint]').forEach(b=>b.onclick=()=>{if(S.money<40){Snd.sad();note('Du behöver 40 mynt.');return}S.money-=40;S.carColor=b.dataset.paint;G.car.setColor(S.carColor);Snd.coin();toast('Bilen är lackad! 🚗');saveGame();renderShop()})}
 function buy(i){if(S.money<i.p){Snd.sad();note('Inte tillräckligt med mynt – vinn tävlingar och hitta gyllene hästskor!');return}
