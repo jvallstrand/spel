@@ -265,7 +265,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.7';
+const APP_VERSION='0.8';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -320,15 +320,16 @@ const SOCKS=[['none','Inga'],['front','Fram'],['all','Alla fyra']];
 const PADS=['#ff4f9a','#8a5cff','#2fd6a6','#ffcf33','#3fa8ff','#ffffff','#2b2b33','#ff5a4f'];
 const HNAMES=['Stjärna','Kanelbulle','Diva','Blixten','Molly','Prinsessan','Turbo','Bus','Saga','Fröken Fart','Glitter','Kaxiga Kajsa','Pepparkaka','Disco'];
 const coatOf=id=>COATS.find(c=>c.id===id)||COATS[0];
-const BREEDS=[{id:'hast',n:'Häst',em:'🐴',s:1,w:1,mane:1,head:1,ride:true,p:450,d:'Snabb och hoppar högt'},{id:'ponny',n:'Ponny',em:'🦄',s:.82,w:1.08,mane:1.15,head:1.05,ride:true,p:350,d:'Lagom stor och supermysig'},
-  {id:'island',n:'Islandshäst',em:'🏔️',s:.86,w:1.14,mane:1.7,head:1,ride:true,p:400,d:'Tuff, lurvig och yvig man'},{id:'mini',n:'Minihäst',em:'🐾',s:.56,w:1.16,mane:1.35,head:1.2,ride:false,p:250,d:'Pytteliten! Kan inte ridas'}];
+const BREEDS=[{id:'hast',n:'Häst',em:'🐴',s:1,w:1,mane:1,head:1,ride:true,p:450,d:'Snabb och hoppar högt'},{id:'ponny',n:'Ponny',em:'🐎',s:.82,w:1.08,mane:1.15,head:1.05,ride:true,p:350,d:'Lagom stor och supermysig'},
+  {id:'island',n:'Islandshäst',em:'🏔️',s:.86,w:1.14,mane:1.7,head:1,ride:true,p:400,d:'Tuff, lurvig och yvig man'},{id:'mini',n:'Minihäst',em:'🐾',s:.56,w:1.16,mane:1.35,head:1.2,ride:false,p:250,d:'Pytteliten! Kan inte ridas'},
+  {id:'unicorn',n:'Enhörning',em:'🦄',s:1,w:1,mane:1.35,head:1,ride:true,p:900,d:'Magisk! Horn, regnbågsman och glitter'}];
 const breedOf=id=>BREEDS.find(b=>b.id===id)||BREEDS[0];
 
 function newHorseData(name,breed){return {name:name||pick(HNAMES),breed:breed||'hast',coat:pick(['fux','brun','palomino','skimmel','svart']),mane:'auto',pattern:'none',face:pick(['star','blaze','none']),socks:pick(['none','front','all']),pad:pick(PADS),
-  ready:{},acc:{glasses:false,crown:false,bows:false,glitter:false},st:{hunger:72,thirst:65,clean:45,mood:70,energy:90},dirt:3,xp:0,loc:'box'}}
+  ready:{},medals:{1:0,2:0,3:0},acc:{glasses:false,crown:false,bows:false,glitter:false},st:{hunger:72,thirst:65,clean:45,mood:70,energy:90},dirt:3,xp:0,loc:'box'}}
 function defaultSave(){return {v:1,created:false,money:150,shoes:[],sup:{hay:6,feed:3,shav:2,carrot:5,apple:2},owned:{},carColor:'#ff4f9a',
   rider:{name:'',skin:1,hair:2,style:'tofs',shirt:'#ff4f9a',pants:'#ffffff',helmet:'#8a5cff'},
-  horses:[newHorseData()],quest:0,rq:null,stat:{clean:0,jumps:0,wins:0,comps:0},ribbons:[],unlock:1,muted:false,t:Date.now()}}
+  horses:[newHorseData()],dogs:[{name:'Brixton',type:'corgi'}],quest:0,rq:null,stat:{clean:0,jumps:0,wins:0,comps:0},ribbons:[],unlock:1,muted:false,t:Date.now()}}
 let S=defaultSave();
 function loadGame(){const raw=lsGet();if(!raw)return false;
   try{const d=JSON.parse(raw);if(!d||!d.horses||!d.horses.length)return false;
@@ -340,7 +341,9 @@ function loadGame(){const raw=lsGet();if(!raw)return false;
       st.hunger=Math.max(Math.min(st.hunger,25),st.hunger-mins*.8);st.thirst=Math.max(Math.min(st.thirst,25),st.thirst-mins*1);
       st.clean=Math.max(Math.min(st.clean,25),st.clean-mins*.3);st.energy=Math.min(100,st.energy+mins*3);
       h.dirt=Math.min(6,h.dirt+Math.floor(mins/15));
-      if(h.loc==='lead'||h.loc==='ride'||h.loc==='trailer')h.loc='box';});
+      if(h.loc==='lead'||h.loc==='ride'||h.loc==='trailer')h.loc='box';
+      const m=h.medals;if(!m[1]&&!m[2]&&!m[3])(S.ribbons||[]).filter(r=>r.h===h.name).forEach(r=>m[r.p]=(m[r.p]||0)+1)});
+    if(!S.dogs)S.dogs=[{name:S.dogName||'Brixton',type:'corgi'}];
     return S.created;
   }catch(e){return false}}
 function saveGame(){if(!S.created)return;S.t=Date.now();
@@ -436,7 +439,10 @@ const ROAD=[[-34,6],[-52,7.5],[-72,3],[-92,-3],[-110,-1],[-124,4]];
 const PATH_BEACH=[[8,-2],[28,1],[50,7],[70,4],[88,2]];
 const PATH_HAGE=[[4,-8],[8,-17],[9,-23]];
 const PATH_ARENA=[[-3.5,4],[-3.5,11]];
-const FLATS=[[-44,50,-44,42],[-218,-122,-32,32],[80,170,-66,66]];
+const FLATS=[[-44,50,-44,42],[-218,-122,-32,32],[80,170,-66,66],[-64,24,33,66]];
+const TRACK={cx:-20,cz:50,A:24,rc:10.5,w:5};TRACK.L=4*TRACK.A+2*Math.PI*TRACK.rc;
+function trackR(x,z){const dx=Math.max(Math.abs(x-TRACK.cx)-TRACK.A,0);return Math.hypot(dx,z-TRACK.cz)}
+const MTN={ready:false};let LASTWY=-.35;
 function rectSD(x,z,r){const dx=Math.max(r[0]-x,x-r[1]),dz=Math.max(r[2]-z,z-r[3]);if(dx<=0&&dz<=0)return Math.max(dx,dz);return Math.hypot(Math.max(dx,0),Math.max(dz,0))}
 function segDist(x,z,ax,az,bx,bz){const vx=bx-ax,vz=bz-az,l=vx*vx+vz*vz;let t=l?((x-ax)*vx+(z-az)*vz)/l:0;t=clamp(t,0,1);return Math.hypot(x-ax-vx*t,z-az-vz*t)}
 function polyDist(x,z,p){let b=1e9;for(let i=0;i<p.length-1;i++)b=Math.min(b,segDist(x,z,p[i][0],p[i][1],p[i+1][0],p[i+1][1]));return b}
@@ -450,10 +456,10 @@ function rawH(x,z){
 // höjdrutnät
 const HG={x0:-234,z0:-94,st:2,nx:195,nz:95};HG.h=new Float32Array(HG.nx*HG.nz);
 for(let j=0;j<HG.nz;j++)for(let i=0;i<HG.nx;i++)HG.h[j*HG.nx+i]=rawH(HG.x0+i*HG.st,HG.z0+j*HG.st);
-function groundH(x,z){const fx=clamp((x-HG.x0)/HG.st,0,HG.nx-1.001),fz=clamp((z-HG.z0)/HG.st,0,HG.nz-1.001);
+function groundH(x,z){if(x<-560&&MTN.ready)return MTN.h(x,z);const fx=clamp((x-HG.x0)/HG.st,0,HG.nx-1.001),fz=clamp((z-HG.z0)/HG.st,0,HG.nz-1.001);
   const i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j,k=j*HG.nx+i;
   return lerp(lerp(HG.h[k],HG.h[k+1],u),lerp(HG.h[k+HG.nx],HG.h[k+HG.nx+1],u),v)}
-function surfaceAt(x,z){const h=groundH(x,z);if(h<L.waterY-.02)return 'water';if(x>83||rectSD(x,z,L.arena)<0||rectSD(x,z,L.varena)<0)return 'sand';return 'grass'}
+function surfaceAt(x,z){if(x<-560&&MTN.ready){const w=MTN.water(x,z);if(w!==null){LASTWY=w;return 'water'}return 'grass'}const h=groundH(x,z);if(h<L.waterY-.02){LASTWY=L.waterY;return 'water'}if(Math.abs(trackR(x,z)-TRACK.rc)<TRACK.w/2)return 'sand';if(x>83||rectSD(x,z,L.arena)<0||rectSD(x,z,L.varena)<0)return 'sand';return 'grass'}
 
 // ---------- texturer ----------
 function canvasTex(w,h,draw,rep){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g,w,h);const t=new THREE.CanvasTexture(c);if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping}t.anisotropy=4;return t}
@@ -499,6 +505,7 @@ function addSegsRect(r,gaps){// staket runt rektangel. gaps: [{side:'x0'|'x1'|'z
     if(cur<hi)out.push(horiz?[[cur,fixed],[hi,fixed]]:[[fixed,cur],[fixed,hi]])}
   return out}
 function collide(p,r){
+  if(p.x<-560&&MTN.ready){mtnClamp(p);return}
   for(const q of COL.rects){const x0=q[0]-r,x1=q[1]+r,z0=q[2]-r,z1=q[3]+r;
     if(p.x>x0&&p.x<x1&&p.z>z0&&p.z<z1){const dl=p.x-x0,dr=x1-p.x,dt=p.z-z0,db=z1-p.z,m=Math.min(dl,dr,dt,db);
       if(m===dl)p.x=x0;else if(m===dr)p.x=x1;else if(m===dt)p.z=z0;else p.z=z1}}
@@ -533,6 +540,7 @@ function groundCol(x,z,h){
   const dp=Math.min(polyDist(x,z,PATH_BEACH),polyDist(x,z,PATH_HAGE),polyDist(x,z,PATH_ARENA));c=mixC(c,GC.dirt,(1-sstep(1.1,2.3,dp+(n-.5)*1.2))*.92);
   c=mixC(c,GC.gravel,1-sstep(2.6,3.6,polyDist(x,z,ROAD)+(n-.5)));
   c=mixC(c,GC.gravel,(1-sstep(-1,1,rectSD(x,z,[-134,-112,-8,14])+(n-.5)*2))*.9);
+  {const tr=trackR(x,z);const td=Math.abs(tr-TRACK.rc);if(td<TRACK.w/2+.6)c=mixC(c,mixC(hexRGB('#c49468'),hexRGB('#b07f55'),n),1-sstep(TRACK.w/2-.2,TRACK.w/2+.6,td));else if(tr<TRACK.rc)c=mixC(c,GC.g2,.25*(Math.floor((x+200)/4)%2))}
   for(const a of [L.arena,L.varena]){const sd=rectSD(x,z,a);if(sd<.6)c=mixC(c,mixC(GC.arena,GC.arena2,n),1-sstep(-.3,.6,sd))}
   const b=sstep(81,89,x+(n-.5)*5);if(b>0){c=mixC(c,mixC(GC.sand,GC.sand2,n),b);
     if(h>.6)c=mixC(c,mixC(GC.g3,GC.rock,n),sstep(.6,1.6,h)*.8)}
@@ -588,6 +596,7 @@ function swayMat(base){base.onBeforeCompile=sh=>{sh.uniforms.uT=grassU.uT;sh.ver
   '#include <begin_vertex>\n#ifdef USE_INSTANCING\nfloat ph=instanceMatrix[3].x*.31+instanceMatrix[3].z*.23;\ntransformed.x+=sin(uT*1.8+ph)*.09*position.y;transformed.z+=cos(uT*1.4+ph)*.05*position.y;\n#endif')};return base}
 function isFree(x,z,pad=0){// fri från vägar, banor, byggnader
   if(rectSD(x,z,L.arena)<2+pad||rectSD(x,z,L.varena)<4+pad||rectSD(x,z,L.yard)<2+pad||rectSD(x,z,L.stable)<4+pad)return false;
+  if(Math.abs(trackR(x,z)-TRACK.rc)<TRACK.w/2+2+pad||(trackR(x,z)<TRACK.rc&&pad>-1))return false;
   if(rectSD(x,z,[-134,-112,-8,14])<2+pad||rectSD(x,z,[-205,-145,-34,-22])<2+pad)return false;
   if(polyDist(x,z,ROAD)<5+pad||polyDist(x,z,PATH_BEACH)<3+pad||polyDist(x,z,PATH_HAGE)<2+pad||polyDist(x,z,PATH_ARENA)<2+pad)return false;
   if(Math.hypot(x-L.shop.x,z-L.shop.z)<5+pad||Math.hypot(x-L.car.x-4,z-L.car.z)<8+pad)return false;
@@ -948,6 +957,9 @@ function makeHorse(d){
   acc.glasses=new THREE.Group();head.add(acc.glasses);
   for(const s of[-1,1]){const l=part(cylG(.07,.07,.02,18),M.dark,acc.glasses,s*.205,.07,.08);l.rotation.z=Math.PI/2;const fr=part(new THREE.TorusGeometry(.072,.014,6,18),M.glitter,acc.glasses,s*.214,.07,.08);fr.rotation.y=Math.PI/2}
   const br=part(boxG(.42,.025,.025),M.glitter,acc.glasses,0,.12,.17);br.rotation.x=.3;
+  const hornM=new THREE.MeshStandardMaterial({color:'#fff3c4',metalness:.5,roughness:.25,emissive:'#ffcf6a',emissiveIntensity:.35});
+  H.horn=new THREE.Group();H.horn.position.set(0,.2,.15);H.horn.rotation.x=.75;head.add(H.horn);part(new THREE.ConeGeometry(.045,.36,12),hornM,H.horn,0,.18,0);
+  for(let k=0;k<4;k++){const r=part(new THREE.TorusGeometry(.04-k*.008,.008,5,12),mat('#ffd6f0',{metalness:.4,roughness:.3}),H.horn,0,.04+k*.075,0);r.rotation.x=Math.PI/2+.3}
   acc.crown=new THREE.Group();acc.crown.position.set(0,.2,-.02);acc.crown.rotation.x=-.35;head.add(acc.crown);
   const cr=part(new THREE.TorusGeometry(.19,.025,6,24),mat('#3f9a4a'),acc.crown,0,0,0);cr.rotation.x=Math.PI/2;
   for(let i=0;i<9;i++){const a=i/9*Math.PI*2;part(GEO.lo,mat(['#ff6fae','#ffd23f','#ffffff','#b48cff'][i%4]),acc.crown,Math.cos(a)*.19,.02,Math.sin(a)*.19,.05,.04,.05)}
@@ -964,10 +976,10 @@ function makeHorse(d){
     this.star.visible=d.face==='star';this.blaze.forEach(s=>s.visible=d.face==='blaze');
     this.legs.forEach((l,i)=>l.sock.visible=d.socks==='all'||(d.socks==='front'&&i<2));
     M.pad.color.set(d.pad);
-    const rb=d.mane==='rainbow';this.mane.forEach((m,i)=>m.material=rb?M.rb[i%6]:M.mane);this.tail.forEach((s,i)=>s.children[0].material=rb?M.rb[(i+2)%6]:M.mane);
+    const rb=d.mane==='rainbow'||d.breed==='unicorn';this.mane.forEach((m,i)=>m.material=rb?M.rb[i%6]:M.mane);this.tail.forEach((s,i)=>s.children[0].material=rb?M.rb[(i+2)%6]:M.mane);
     const a=d.acc||{};this.acc.glasses.visible=!!a.glasses;this.acc.crown.visible=!!a.crown;this.acc.bows.visible=!!a.bows;this.acc.bows.userData.tail.visible=!!a.bows;
     this.legs.forEach(l=>l.hoof.material=a.glitter?M.glitter:M.hoof);
-    const br=breedOf(d.breed);this.root.scale.setScalar(br.s);this.body.scale.set(br.w,1,1);this.head.scale.setScalar(1.22*br.head);
+    const br=breedOf(d.breed);this.horn.visible=br.id==='unicorn';this.root.scale.setScalar(br.s);this.body.scale.set(br.w,1,1);this.head.scale.setScalar(1.22*br.head);
     this.mane.forEach((m,i)=>{const s0=m.userData.s0||(m.userData.s0=m.scale.clone());m.scale.set(s0.x*(i?1:br.mane),s0.y*br.mane,s0.z*(i?br.mane:br.mane*1.2))});this.tail.forEach(s=>{const c=s.children[0];const s0=c.userData.s0||(c.userData.s0=c.scale.clone());c.scale.set(s0.x*(br.mane*.9+.1),s0.y,s0.z*(br.mane*.9+.1))});this.breed=br};
   H.setTack=function(on){this.tack.visible=on;this.bridle.visible=on};
   H.setDirt=function(n){this.dirt.forEach((s,i)=>{s.a=1;s.m.opacity=1;s.o.visible=i<n})};
@@ -1055,6 +1067,8 @@ function makeRider(r){
   R.setHelmet=function(on){helmet.visible=on;cap.visible=!on;styles.knut.position.y=on?-.05:0};
   R.setLook(r);R.setHelmet(false);
   R.animate=function(dt,o={}){this.t+=dt;const t=this.t;
+    if(o.cart){hips.position.set(0,.66,0);torso.rotation.x=damp(torso.rotation.x,.04,6,dt);this.legs.forEach(L=>{L.hp.rotation.set(-1.5,0,L.s*-.12);L.kn.rotation.x=1.45});
+      this.arms.forEach(A=>{if(o.cheer){A.sh.rotation.set(-2.8+Math.sin(t*10)*.2,0,A.s*-.3);A.el.rotation.x=-.2}else{A.sh.rotation.set(-.85,0,A.s*-.1);A.el.rotation.x=-.7}});head.rotation.x=0;return false}
     if(o.ride){// sittande
       const b=o.bounce||0;hips.position.set(0,.66+b,0);torso.rotation.x=damp(torso.rotation.x,o.lean||.08,6,dt);
       this.legs.forEach(L=>{L.hp.rotation.set(-1.2,0,L.s*-.5);L.kn.rotation.x=1.45});
@@ -1154,7 +1168,7 @@ const QUESTS=[
   {id:'muck',t:'Mocka boxen 💩 (tryck Mocka i boxen)',r:15},{id:'hage',t:'Ta ut {h} och släpp ut i hagen',r:15},{id:'ride',t:'Hämta {h} i hagen och sitt upp',r:10},
   {id:'jump',t:'Hoppa ett hinder på ridbanan',r:20},{id:'beach',t:'Rid till stranden och plaska i vattenbrynet',r:25},
   {id:'shoe',t:'Hitta en gyllene hästsko',r:15},{id:'comp',t:'Åk på tävling med bilen',r:30}];
-const RQ=[{id:'fetch',t:'Kasta pinne till hunden 🦴',r:10},{id:'jump3',t:'Hoppa 3 hinder utan rivning',r:20,n:3},{id:'treat',t:'Ge {h} en morot eller ett äpple',r:10},{id:'brush',t:'Borsta {h}',r:15},
+const RQ=[{id:'cart',t:'Kör häst och vagn 🛞',r:15},{id:'race',t:'Vinn ett galopplopp 🏇',r:40},{id:'mountain',t:'Rid upp till toppen i bergen 🏔️',r:40},{id:'fetch',t:'Kasta pinne till hunden 🦴',r:10},{id:'jump3',t:'Hoppa 3 hinder utan rivning',r:20,n:3},{id:'treat',t:'Ge {h} en morot eller ett äpple',r:10},{id:'brush',t:'Borsta {h}',r:15},
   {id:'beach',t:'Plaska i vattenbrynet med {h}',r:20},{id:'hage',t:'Släpp ut {h} i hagen',r:10},{id:'muck',t:'Mocka boxen',r:15},{id:'gallop',t:'Galoppera 20 sekunder',r:15,n:20},
   {id:'comp',t:'Åk på tävling',r:30},{id:'win',t:'Vinn en tävling 🏆',r:50},{id:'hoof',t:'Kratsa hovarna på {h}',r:10}];
 const CLASSES=[
@@ -1186,7 +1200,7 @@ function initWorld(){
   G.arrow=new THREE.Mesh(arrG,new THREE.MeshBasicMaterial({color:'#ffcf33',transparent:true,opacity:.9,depthWrite:false}));G.arrow.visible=false;scene.add(G.arrow);
   G.ring=new THREE.Mesh(new THREE.TorusGeometry(1.1,.12,8,28),new THREE.MeshBasicMaterial({color:'#ffcf33'}));G.ring.visible=false;scene.add(G.ring);
   G.careLight=new THREE.PointLight(0xfff0d0,0,9,1.5);scene.add(G.careLight);
-  rebuildHorses();SHOES.sync();setStableSign(S.rider.name);setGate(false,true);dogInit();
+  rebuildHorses();SHOES.sync();setStableSign(S.rider.name);setGate(false,true);dogInit();cartInit();
 }
 function rebuildHorses(){G.horses.forEach(h=>scene.remove(h.m.g));G.horses=S.horses.map((d,i)=>spawnHorse(d,i));L.boxes.forEach((b,i)=>setPlate(i,S.horses[i]?S.horses[i].name:''));}
 function spawnHorse(d,i){const m=makeHorse(d);scene.add(m.g);
@@ -1253,7 +1267,7 @@ function updateRope(){const show=G.lead>=0&&(G.mode==='play');G.rope.visible=sho
 // ---------- ridning ----------
 function maxGait(h){const st=h.d.st;if(st.hunger<10||st.thirst<10)return 1;if(st.energy<8)return 1;return 3}
 function updateRide(dt){const h=G.horses[G.ride],st=h.d.st;const mv=moveVec();const air=h.jumpT>=0;
-  let tgt=0;if(G.comp&&!G.comp.go)tgt=0;else if(mv.len>.12){tgt=mv.len<.62?1.9:4.6;if(G.gallop&&mv.len>.45)tgt=8.2}
+  let tgt=0;if((G.comp&&!G.comp.go)||(G.race&&!G.race.go))tgt=0;else if(mv.len>.12){tgt=mv.len<.62?1.9:4.6;if(G.gallop&&mv.len>.45)tgt=G.cart?6.8:8.2;if(G.race&&G.race.spurt>0&&tgt>4)tgt=9.6}
   const mg=maxGait(h);if(tgt>1.9&&mg<2){tgt=1.9;if(G.t-G.refuse>6){G.refuse=G.t;say(h,st.energy<8?'tired':st.hunger<10?['Jag kör inte på tom mage!']:['Inte utan vatten!'],true);note(st.energy<8?'Hästen är för trött – låt den vila i hagen eller boxen.':'Hästen behöver mat och vatten först!')}}
   if(!air)h.speed=damp(h.speed,tgt,tgt>h.speed?1.5:2.6,dt);
   if(mv.len>.12&&!(G.comp&&!G.comp.go)){const want=Math.atan2(mv.x,mv.z);const rate=(air?.4:1)*lerp(2.8,1.55,clamp(h.speed/8,0,1));h.yaw+=clamp(wrapA(want-h.yaw),-rate*dt,rate*dt)}
@@ -1264,17 +1278,18 @@ function updateRide(dt){const h=G.horses[G.ride],st=h.d.st;const mv=moveVec();co
   checkJumps(h);
   // ytor & effekter
   const sf=surfaceAt(h.pos.x,h.pos.z);
-  if(sf==='water'&&h.speed>1.2){if(Math.random()<dt*(h.speed*3))PT.emit('splash',h.pos.x+rand(-.5,.5),L.waterY+.05,h.pos.z+rand(-.6,.6),3,{vx:Math.sin(h.yaw)*h.speed*.3,vz:Math.cos(h.yaw)*h.speed*.3});
-    if(h.speed>4&&Math.random()<dt*8)PT.emit('spray',h.pos.x,L.waterY+.3,h.pos.z,2,{r:1});
+  if(sf==='water'&&h.speed>1.2){if(Math.random()<dt*(h.speed*3))PT.emit('splash',h.pos.x+rand(-.5,.5),LASTWY+.05,h.pos.z+rand(-.6,.6),3,{vx:Math.sin(h.yaw)*h.speed*.3,vz:Math.cos(h.yaw)*h.speed*.3});
+    if(h.speed>4&&Math.random()<dt*8)PT.emit('spray',h.pos.x,LASTWY+.3,h.pos.z,2,{r:1});
     h.wetT=(h.wetT||0)+dt;if(h.wetT>2.5){quest('beach');if(!h.saidBeach){h.saidBeach=1;say(h,'beach',true)}}}
   else if(h.speed>5&&!air&&Math.random()<dt*6)PT.emit(sf==='sand'?'sand':'dust',h.pos.x-Math.sin(h.yaw)*.8,h.pos.y+.05,h.pos.z-Math.cos(h.yaw)*.8,2,{r:.6});
+  if(h.d.breed==='unicorn'&&h.speed>1&&Math.random()<dt*14)PT.emit(Math.random()<.2?'heart':'sparkle',h.pos.x-Math.sin(h.yaw)*.9,h.pos.y+1,h.pos.z-Math.cos(h.yaw)*.9,1,{r:.6,color:pick(['#ff4f4f','#ffd93d','#3fd67c','#3fa8ff','#8a5cff','#ff86bd'])});
   if(h.d.acc.glitter&&h.speed>2&&Math.random()<dt*10)PT.emit('sparkle',h.pos.x,h.pos.y+.2,h.pos.z,1,{r:.8});
   if(h.speed>6){h.galT+=dt;if(h.galT>=20){quest('gallop')}}
-  if(G.comp)updateComp(dt,h)}
-function doJump(){const h=G.horses[G.ride];if(!h||h.jumpT>=0)return;if(G.comp&&!G.comp.go)return;
+  if(G.comp)updateComp(dt,h);if(G.race)updateRace(dt,h)}
+function doJump(){if(G.race){raceSpurt();return}if(G.cart){note('Man kan inte hoppa med vagn! 😅');return}const h=G.horses[G.ride];if(!h||h.jumpT>=0)return;if(G.comp&&!G.comp.go)return;
   if(h.speed<1.2){note('Rid framåt först – sen HOPPA!');return}
   if(h.d.st.energy<4){say(h,'tired',true);return}
-  const st=h.d.st,f=.78+.22*clamp(st.energy/50,0,1)+.1*clamp((st.mood-50)/50,0,1)+Math.min(.15,h.d.xp*.004);
+  const st=h.d.st,f=.78+.22*clamp(st.energy/50,0,1)+.1*clamp((st.mood-50)/50,0,1)+Math.min(.15,h.d.xp*.004)+(h.d.breed==='unicorn'?.12:0);
   h.jumpApex=(.42+.86*clamp(h.speed/8,0,1))*f;h.jumpDur=.72+.16*clamp(h.speed/8,0,1);h.jumpT=0;st.energy-=1.5;Snd.whoosh();
   if(G.ride>=0){const sf=surfaceAt(h.pos.x,h.pos.z);PT.emit(sf==='water'?'splash':sf==='sand'?'sand':'dust',h.pos.x,h.pos.y+.1,h.pos.z,8,{r:.8})}}
 function activeJumps(){return G.comp?G.jumps.venue:G.jumps.home.concat(G.jumps.venue)}
@@ -1327,7 +1342,7 @@ function updateHorses(dt){G.horses.forEach(h=>{let o={speed:h.speed};
   h.m.g.position.copy(h.pos);h.m.g.rotation.y=h.yaw;
   const beat=h.m.animate(dt,o);
   if(beat&&h.speed>.6&&h.pos.distanceTo(G.cam.focus)<30){const sf=surfaceAt(h.pos.x,h.pos.z);Snd.clop(sf,h.state==='ride'?1:.6);
-    if(sf==='water')PT.emit('splash',h.pos.x+rand(-.3,.3),L.waterY+.04,h.pos.z+rand(-.4,.4),h.speed>4?5:2,{size:h.speed>4?1.1:.7})}
+    if(sf==='water')PT.emit('splash',h.pos.x+rand(-.3,.3),LASTWY+.04,h.pos.z+rand(-.4,.4),h.speed>4?5:2,{size:h.speed>4?1.1:.7})}
   if(G.mode==='play'||G.mode==='comp')autoSay(h,dt)});
   G.npcs.forEach(n=>{n.m.animate(dt,{speed:0,look:Math.sin(G.t*.4+n.ph)*.3});n.r.animate(dt,{ride:true})})}
 
@@ -1347,7 +1362,8 @@ function unseatRider(h){h.m.body.remove(player.model.g);scene.add(player.model.g
 function mount(){const h=G.horses[G.lead];if(!h)return;if(!breedOf(h.d.breed).ride){say(h,['Rida på MIG? Jag är ju mini!','Nej tack, jag är för liten. 🐾'],true);note('Minihästar kan man inte rida – men man kan leda dem överallt!');return}G.ride=h.i;G.lead=-1;h.state='ride';h.m.setTack(true);player.model.setHelmet(true);
   seatRider(h);
   G.gallop=false;G.cam.yaw=h.yaw;quest('ride');h.galT=0;h.wetT=0;Snd.snort();setRideUI(true)}
-function dismount(){const h=G.horses[G.ride];if(!h||h.jumpT>=0)return;G.ride=-1;h.state='lead';G.lead=h.i;h.speed=0;
+function dismount(){const h=G.horses[G.ride];if(!h||h.jumpT>=0)return;if(G.race&&!G.race.done){note('Rid klart loppet först!');return}if(G.race)endRace();
+  if(G.cart){G.ride=-1;h.state='lead';G.lead=h.i;h.speed=0;unhitchCart(h);setRideUI(false);return}G.ride=-1;h.state='lead';G.lead=h.i;h.speed=0;
   unseatRider(h);
   player.pos.set(h.pos.x+Math.cos(h.yaw)*1.2,0,h.pos.z-Math.sin(h.yaw)*1.2);collide(player.pos,.38);player.yaw=h.yaw;setRideUI(false)}
 function pickShoes(dt){const p=G.ride>=0?G.horses[G.ride].pos:player.pos,r=G.ride>=0?2.2:1.5;
@@ -1361,7 +1377,7 @@ function quest(id){if(S.questsOff)return;const q=curQuest();if(!q||q.id!==id)ret
   S.money+=q.r;Snd.quest();setTimeout(()=>toast('Uppdrag klart! 🎯','+'+q.r+' 🪙'),500);
   if(S.quest<QUESTS.length)S.quest++;else S.rq=newRQ(q.id);
   const el=$('#quest');el.classList.remove('done');void el.offsetWidth;el.classList.add('done');renderQuest();saveGame()}
-function renderQuest(){const q=curQuest(),el=$('#quest');if(!q||G.comp||S.questsOff){el.hidden=true;return}el.hidden=false;
+function renderQuest(){const q=curQuest(),el=$('#quest');if(!q||G.comp||G.race||S.questsOff){el.hidden=true;return}el.hidden=false;
   el.innerHTML='<b>🎯 Uppdrag</b>'+q.t.replace('{h}',hName())+(q.n&&q.id!=='gallop'?` (${q.c||0}/${q.n})`:'')+` · +${q.r} 🪙`}
 
 // ---------- kamera ----------
@@ -1377,9 +1393,10 @@ function updateCamera(dt){const c=G.cam;
   c.focus.x=damp(c.focus.x,fx,14,dt);c.focus.z=damp(c.focus.z,fz,14,dt);c.focus.y=damp(c.focus.y,fy,6,dt);
   const moving=riding?ent.speed>.8:player.speed>.6;const yawT=riding?ent.yaw:player.yaw;
   if(G.t-c.lastDrag>1.4&&moving)c.yaw=dampA(c.yaw,yawT,riding?2:1.1,dt);
+  if(G.t-c.lastDrag>3){const tp=c.focus.x<-560?.14:.36;if(Math.abs(c.pitch-tp)>.01&&(c.focus.x<-560||c.pitch<.2))c.pitch=damp(c.pitch,tp,1.5,dt)}
   const dist=riding?7.2+ent.speed*.28:5.8;c.dist=damp(c.dist||dist,dist,3,dt);
   const cp=Math.cos(c.pitch);const px=c.focus.x-Math.sin(c.yaw)*c.dist*cp,pz=c.focus.z-Math.cos(c.yaw)*c.dist*cp;let py=c.focus.y+Math.sin(c.pitch)*c.dist;
-  py=Math.max(py,groundH(px,pz)+.6,L.waterY+.5);camera.position.set(px,py,pz);camera.lookAt(c.focus);
+  py=Math.max(py,groundH(px,pz)+.6,LASTWY+.5);camera.position.set(px,py,pz);camera.lookAt(c.focus);
   const fov=riding?55+clamp((ent.speed-4)*1.6,0,8):55;if(Math.abs(camera.fov-fov)>.05){camera.fov=damp(camera.fov,fov,3,dt);camera.updateProjectionMatrix()}
   sunFollow(c.focus)}
 
@@ -1408,7 +1425,7 @@ function finishComp(){const c=G.comp;c.done=true;G.ring.visible=G.arrow.visible=
   names.forEach(n=>{const r=Math.random(),p=P;const f=r<p[0]?0:r<p[0]+p[1]?4:8;rivals.push({n,f,t:c.cls.allowed*rand(TF[0],TF[1])})});
   const me={n:(S.rider.name||'Du')+' & '+h.d.name,f:total,t:c.t,me:true};const all=rivals.concat([me]).sort((a,b)=>a.f-b.f||a.t-b.t);const place=all.indexOf(me)+1;
   const prize=place<=3?Math.round(c.cls.prize[place-1]*[.7,1,1.5][lv]):5;S.money+=prize;S.stat.comps++;if(place===1){S.stat.wins++;quest('win')}quest('comp');
-  if(place<=3){S.ribbons.push({c:c.ci,p:place,h:h.d.name});if(c.ci+1>=S.unlock&&c.ci<2)S.unlock=Math.max(S.unlock,c.ci+2)}
+  if(place<=3){h.d.medals=h.d.medals||{1:0,2:0,3:0};h.d.medals[place]++;S.ribbons.push({c:c.ci,p:place,h:h.d.name});if(c.ci+1>=S.unlock&&c.ci<2)S.unlock=Math.max(S.unlock,c.ci+2)}
   h.d.st.clean-=15;h.d.st.energy-=10;h.d.xp+=3;
   VENUE.crowd.cheer=place<=3?4:1;if(place<=3){Snd.fanfare();Snd.cheer();for(let i=0;i<6;i++)setTimeout(()=>PT.emit('confetti',h.pos.x,h.pos.y+3,h.pos.z,30,{r:3}),i*250)}else Snd.sad();
   say(h,place<=3?'win':'lose',true);player.cheer=place<=3?4:0;
@@ -1450,69 +1467,88 @@ function updateCut(dt){const c=G.cut;if(!c)return;if(c.i<0||c.t>=c.steps[c.i].d)
 
 // ---------- karta ----------
 const PLACES=[['🏡','Stallet','Boxarna och dina hästar',-22,-8,0],['🛒','Butiken','Hö, godis och coola prylar',-4,-15.5,Math.PI],['🌼','Hagen','Släpp ut hästarna',6.5,-23,Math.PI/2],
-  ['🚧','Ridbanan','Träna hoppning',-3.5,7,0],['🌊','Stranden','Galoppera i vattenbrynet',87,1,Math.PI/2],['🚗','Bilen','Åk på tävling',-22,9,-Math.PI/2]];
-function travel(i){const p=PLACES[i];closeModals();fade(true,p[0]+' '+p[1]);setTimeout(()=>{
+  ['🚧','Ridbanan','Träna hoppning',-3.5,7,0],['🌊','Stranden','Galoppera i vattenbrynet',87,1,Math.PI/2],['🚗','Bilen','Tävling eller långtur i bergen',-22,9,-Math.PI/2],['🏇','Galoppbanan','Rid lopp som jockey',-16,35.5,0],['🛞','Vagnen','Spänn för och kör häst och vagn',-6,-8.2,Math.PI]];
+function travel(i){const p=PLACES[i];closeModals();if(G.race){note('Inte under loppet!');return}if(G.carAway){parkCar('home');G.carAway=null}fade(true,p[0]+' '+p[1]);setTimeout(()=>{
   const ent=G.ride>=0?G.horses[G.ride]:null;if(ent){ent.pos.set(p[3],0,p[4]);ent.yaw=p[5];ent.speed=0;ent.pos.y=groundH(p[3],p[4]);ent.prev.clear()}
   else{player.pos.set(p[3],0,p[4]);player.yaw=p[5];if(G.lead>=0){const h=G.horses[G.lead];h.pos.set(p[3]-Math.sin(p[5])*1.8,0,p[4]-Math.cos(p[5])*1.8);h.yaw=p[5]}}
   G.cam.yaw=p[5];G.cam.focus.set(p[3],1.5,p[4]);setTimeout(()=>fade(false),250)},480)}
-// ================= HUNDEN & RYMNINGAR =================
-function makeDog(){const D={g:new THREE.Group(),t:0,phase:0,legs:[],tail:null};
-  const fur=new THREE.MeshStandardMaterial({color:'#e2a057',roughness:.7}),wh=new THREE.MeshStandardMaterial({color:'#fff7ec',roughness:.7}),dk=mat('#1b1420',{roughness:.3}),pk=mat('#ff86a8');
-  const root=new THREE.Group();D.g.add(root);D.root=root;
-  part(GEO.sph,fur,root,0,.36,0,.17,.16,.31);part(GEO.sph,wh,root,0,.33,.2,.13,.13,.13);part(GEO.sph,wh,root,0,.28,0,.13,.08,.22);
-  const head=new THREE.Group();head.position.set(0,.55,.3);root.add(head);D.head=head;
+// ================= HUNDARNA & RYMNINGAR =================
+const DOGTYPES={corgi:{n:'Corgi',em:'🐕',fur:'#e2a057',wh:'#fff7ec',ear:'up',len:1,leg:1,sz:1,p:150},
+  golden:{n:'Golden retriever',em:'🦮',fur:'#e8b86b',wh:'#f6d9a0',ear:'flop',len:1.05,leg:1.5,sz:1.2,p:180},
+  dalmatiner:{n:'Dalmatiner',em:'🐾',fur:'#fbfbf7',wh:'#fbfbf7',ear:'flop',len:1.05,leg:1.6,sz:1.15,spots:'#1b1420',p:200},
+  labrador:{n:'Svart labrador',em:'🐕‍🦺',fur:'#2c272b',wh:'#3a3438',ear:'flop',len:1.05,leg:1.5,sz:1.2,p:180},
+  tax:{n:'Tax',em:'🌭',fur:'#8a4a26',wh:'#b06a3a',ear:'flop',len:1.5,leg:.6,sz:1,p:150},
+  pudel:{n:'Pudel',em:'🩷',fur:'#ffd0e4',wh:'#ffe3ef',ear:'fluff',len:1,leg:1.4,sz:1.05,fluff:1,p:220}};
+const DOGNAMES=['Bella','Charlie','Molly','Ozzy','Luna','Sixten','Nisse','Tassen','Selma','Pluto','Kakan','Rufus'];
+function makeDog(type){const T=DOGTYPES[type]||DOGTYPES.corgi;const D={g:new THREE.Group(),t:0,phase:0,legs:[],tail:null};
+  const fur=new THREE.MeshStandardMaterial({color:T.fur,roughness:.7}),wh=new THREE.MeshStandardMaterial({color:T.wh,roughness:.7}),dk=mat('#1b1420',{roughness:.3}),pk=mat('#ff86a8');
+  const root=new THREE.Group();D.g.add(root);D.root=root;const LH=.26*T.leg,BY=.1+LH,bl=.31*T.len;
+  part(GEO.sph,fur,root,0,BY+.06,0,.17,.16,bl);part(GEO.sph,wh,root,0,BY+.03,bl*.65,.13,.13,.13);part(GEO.sph,wh,root,0,BY-.02,0,.13,.08,bl*.7);
+  if(T.spots)for(let i=0;i<14;i++){const a=rand(0,6.28),z=rand(-bl*.8,bl*.8);part(GEO.lo,mat(T.spots),root,Math.cos(a)*.165,BY+.06+Math.sin(a)*.15,z,.035,.035,.035)}
+  if(T.fluff){part(GEO.sph,fur,root,0,BY+.08,bl*.45,.2,.2,.2)}
+  const head=new THREE.Group();head.position.set(0,BY+.25,bl*.95);root.add(head);D.head=head;
   part(GEO.sph,fur,head,0,0,0,.15,.14,.14);part(GEO.sph,wh,head,0,-.045,.12,.085,.07,.1);part(GEO.lo,dk,head,0,-.015,.215,.03,.025,.025);
   for(const s of[-1,1]){part(GEO.lo,dk,head,s*.065,.035,.115,.026,.032,.02);part(GEO.lo,new THREE.MeshBasicMaterial({color:'#fff'}),head,s*.072,.048,.13,.008,.009,.006);
-    const ear=part(new THREE.ConeGeometry(.065,.15,8),fur,head,s*.085,.15,-.03);ear.rotation.z=-s*.35;part(new THREE.ConeGeometry(.04,.1,8),pk,head,s*.083,.14,-.012).rotation.z=-s*.35}
+    if(T.ear==='up'){const ear=part(new THREE.ConeGeometry(.065,.15,8),fur,head,s*.085,.15,-.03);ear.rotation.z=-s*.35;part(new THREE.ConeGeometry(.04,.1,8),pk,head,s*.083,.14,-.012).rotation.z=-s*.35}
+    else if(T.ear==='flop'){const ear=part(GEO.sph,T.spots?mat(T.spots):fur,head,s*.14,-.02,-.02,.04,.11,.07);ear.rotation.z=s*.25}
+    else part(GEO.sph,fur,head,s*.15,-.03,-.02,.08,.1,.08)}
+  if(T.fluff)part(GEO.sph,fur,head,0,.12,-.02,.11,.09,.1);
   D.tongue=part(boxG(.05,.012,.07),pk,head,0,-.09,.15);D.tongue.rotation.x=.5;
-  [[.09,.2],[-.09,.2],[.09,-.2],[-.09,-.2]].forEach(p=>{const l=new THREE.Group();l.position.set(p[0],.3,p[1]);root.add(l);part(cylG(.042,.036,.26,8),fur,l,0,-.13,0);part(GEO.lo,wh,l,0,-.27,.02,.045,.03,.06);D.legs.push(l)});
-  const tl=new THREE.Group();tl.position.set(0,.45,-.28);tl.rotation.x=-.8;root.add(tl);part(GEO.sph,fur,tl,0,.08,0,.05,.11,.05);part(GEO.lo,wh,tl,0,.18,0,.04,.04,.04);D.tail=tl;
+  [[.09,bl*.62],[-.09,bl*.62],[.09,-bl*.62],[-.09,-bl*.62]].forEach(p=>{const l=new THREE.Group();l.position.set(p[0],BY,p[1]);root.add(l);part(cylG(.042,.036,LH,8),fur,l,0,-LH/2,0);part(GEO.lo,wh,l,0,-LH-.01,.02,.045,.03,.06);if(T.fluff)part(GEO.sph,fur,l,0,-LH+.03,0,.06,.06,.06);D.legs.push(l)});
+  const tl=new THREE.Group();tl.position.set(0,BY+.15,-bl*.92);tl.rotation.x=-.8;root.add(tl);part(GEO.sph,fur,tl,0,.08,0,.05,.11,.05);part(GEO.lo,T.fluff?fur:wh,tl,0,.18,0,T.fluff?.08:.04,T.fluff?.08:.04,T.fluff?.08:.04);D.tail=tl;
   D.stick=part(cylG(.025,.025,.5,6),mat('#8a5a32'),head,0,-.07,.2);D.stick.rotation.z=Math.PI/2;D.stick.visible=false;
-  D.g.traverse(o=>{if(o.isMesh)o.castShadow=true});
-  D.animate=function(dt,o){this.t+=dt;const sp=o.speed||0;this.phase=(this.phase+dt*sp*1.6)%1;const P=this.phase*Math.PI*2,a=clamp(sp/2,0,1)*.7;
+  D.g.scale.setScalar(T.sz);D.g.traverse(o=>{if(o.isMesh)o.castShadow=true});
+  D.animate=function(dt,o){this.t+=dt;const sp=o.speed||0;this.phase=(this.phase+dt*sp*1.6/T.leg)%1;const P=this.phase*Math.PI*2,a=clamp(sp/2,0,1)*.7;
     this.legs.forEach((l,i)=>{l.rotation.x=o.sit?(i<2?0:-1.3):Math.sin(P+(i===0||i===3?0:Math.PI))*a});
     this.root.position.y=o.sit?-.08:Math.abs(Math.sin(P*2))*.03*a;this.root.rotation.x=o.sit?-.35:0;
-    this.tail.rotation.z=Math.sin(this.t*(o.wag?18:6))*(o.wag?.8:.35);this.head.rotation.x=o.sniff?.6:o.bark?-.3+Math.sin(this.t*30)*.1:Math.sin(this.t*1.3)*.05;
+    this.tail.rotation.z=Math.sin(this.t*(o.wag?18:6))*(o.wag?.8:.35);this.head.rotation.x=o.bark?-.3+Math.sin(this.t*30)*.1:Math.sin(this.t*1.3)*.05;
     this.tongue.visible=sp>3||o.wag};
   return D}
-Snd.bark=function(){this.tone(520,.09,{type:'square',gain:.07,fEnd:330});this.noise(.08,{f:900,q:2,gain:.1});this.tone(560,.08,{type:'square',gain:.06,fEnd:350,when:.16});this.noise(.07,{f:950,q:2,gain:.08,when:.16})};
-const DOG={pos:new V3(-8,0,-2),yaw:0,speed:0,mode:'roam',t:0,tx:-8,tz:-2,barkT:3,wagT:0,sitT:0,stick:null,sniff:false};
-function dogInit(){DOG.m=makeDog();scene.add(DOG.m.g);DOG.pos.set(-9,0,-3);
-  const st=new THREE.Mesh(cylG(.025,.025,.5,6),mat('#8a5a32'));st.castShadow=true;st.visible=false;scene.add(st);DOG.stickM=st}
-function dogName(){return S.dogName||'Brixton'}
+Snd.bark=function(p=1){this.tone(520*p,.09,{type:'square',gain:.07,fEnd:330*p});this.noise(.08,{f:900*p,q:2,gain:.1});this.tone(560*p,.08,{type:'square',gain:.06,fEnd:350*p,when:.16});this.noise(.07,{f:950*p,q:2,gain:.08,when:.16})};
+const DOGS=[];const STICK={s:null,m:null};
+function spawnDog(d,i){const D={d,i,pos:new V3(-9-i*1.5,0,-3+i),yaw:0,speed:0,mode:'roam',t:i,tx:-8,tz:-2,barkT:3+i,wagT:0,sitT:0,ang:i*1.9};D.m=makeDog(d.type);scene.add(D.m.g);DOGS.push(D);return D}
+function dogInit(){DOGS.forEach(D=>scene.remove(D.m.g));DOGS.length=0;S.dogs.forEach((d,i)=>spawnDog(d,i));
+  if(!STICK.m){const st=new THREE.Mesh(cylG(.025,.025,.5,6),mat('#8a5a32'));st.castShadow=true;st.visible=false;scene.add(st);STICK.m=st}}
+function dogName(D){return (D||DOGS[0]||{d:{name:'Brixton'}}).d.name}
+function nearestDog(p,max){let best=null,bd=max||1e9;DOGS.forEach(D=>{const d=Math.hypot(p.x-D.pos.x,p.z-D.pos.z);if(d<bd){bd=d;best=D}});return best}
 function dogOwnerPos(){return G.ride>=0?G.horses[G.ride].pos:player.pos}
-function updateDog(dt){const D=DOG;if(!D.m)return;D.t-=dt;D.barkT-=dt;D.wagT-=dt;let sit=false,bark=false;
-  const vis=G.mode!=='comp'&&!(G.mode==='cut');D.m.g.visible=vis;if(!vis)return;
-  const own=dogOwnerPos(),od=Math.hypot(own.x-D.pos.x,own.z-D.pos.z);
-  if(od>45&&G.mode==='play'){D.pos.set(own.x-3,0,own.z-2);D.mode='roam';D.t=0}
-  const loose=G.horses.find(h=>h.state==='loose');
-  let want=0;
-  if(D.mode==='fetch'&&D.stick){const s=D.stick;D.ft=(D.ft||0)+dt;if(D.ft>7&&!s.fly){s.p.set(D.pos.x,0,D.pos.z)}if(s.fly){/* vänta */D.tx=s.p.x;D.tz=s.p.z;want=7}else{D.tx=s.p.x;D.tz=s.p.z;want=7.5;if(Math.hypot(D.tx-D.pos.x,D.tz-D.pos.z)<.6){D.mode='return';D.m.stick.visible=true;D.stickM.visible=false;Snd.pop()}}}
-  else if(D.mode==='return'){D.tx=own.x;D.tz=own.z;want=6;D.ft=(D.ft||0)+dt;if(D.ft>16)D.pos.set(own.x-1.5,0,own.z-1);if(od<1.6){D.mode='roam';D.t=2;D.m.stick.visible=false;D.stick=null;D.stickM.visible=true;D.stickM.position.set(own.x+Math.sin(player.yaw)*.9,groundH(own.x,own.z)+.03,own.z+Math.cos(player.yaw)*.9);D.stickM.rotation.set(0,player.yaw,Math.PI/2);D.wagT=2;quest('fetch')}}
-  else if(loose&&G.mode==='play'){// leta: spring till hästen, skälla, kom tillbaka om man inte följer
-    const hd=Math.hypot(loose.pos.x-D.pos.x,loose.pos.z-D.pos.z),pd=od;
-    if(D.mode!=='seek'&&D.mode!=='call'){D.mode='seek'}
-    if(D.mode==='seek'){D.tx=loose.pos.x+2;D.tz=loose.pos.z+1;want=hd>3?7:0;if(hd<3.5){sit=true;if(D.barkT<0){D.barkT=1.2;bark=true}if(pd>22)D.mode='call'}}
-    else{D.tx=own.x;D.tz=own.z;want=7;if(pd<4){D.mode='seek';Snd.bark();D.barkT=.8}}}
-  else{if(D.mode==='seek'||D.mode==='call')D.mode='roam';
-    if(od>7){D.tx=own.x-Math.sin(G.ride>=0?G.horses[G.ride].yaw:player.yaw)*2+2;D.tz=own.z-Math.cos(G.ride>=0?G.horses[G.ride].yaw:player.yaw)*2;want=Math.min(9,od*1.1)}
-    else{if(D.t<=0){const r=Math.random();D.t=rand(2,5);if(r<.3){D.sitT=rand(2,4)}else{D.tx=own.x+rand(-6,6);D.tz=own.z+rand(-6,6)}}
+function updateDogs(dt){DOGS.forEach(D=>updateDog(D,dt));
+  const s=STICK.s;if(s&&s.fly){s.v.y-=14*dt;s.p.addScaledVector(s.v,dt);const gh=groundH(s.p.x,s.p.z);if(s.p.y<gh+.04){s.p.y=gh+.04;s.fly=false;Snd.thud()}STICK.m.position.copy(s.p);STICK.m.rotation.x+=dt*12}}
+function updateDog(D,dt){D.t-=dt;D.barkT-=dt;D.wagT-=dt;let sit=false,bark=false;const pitch=1.15/DOGTYPES[D.d.type].sz;
+  const vis=G.mode!=='comp'&&G.mode!=='cut';D.m.g.visible=vis;if(!vis)return;
+  const own=dogOwnerPos(),od=Math.hypot(own.x-D.pos.x,own.z-D.pos.z),oy=G.ride>=0?G.horses[G.ride].yaw:player.yaw;
+  if(od>45&&G.mode==='play'){D.pos.set(own.x-3-D.i,0,own.z-2);D.mode='roam';D.t=0}
+  const loose=G.horses.find(h=>h.state==='loose');let want=0;
+  if(D.mode==='fetch'&&STICK.s){const s=STICK.s;D.ft=(D.ft||0)+dt;if(D.ft>7&&!s.fly)s.p.set(D.pos.x,0,D.pos.z);D.tx=s.p.x;D.tz=s.p.z;want=s.fly?7:7.5;
+    if(!s.fly&&Math.hypot(D.tx-D.pos.x,D.tz-D.pos.z)<.6){D.mode='return';D.ft=0;D.m.stick.visible=true;STICK.m.visible=false;Snd.pop()}}
+  else if(D.mode==='return'){D.tx=own.x;D.tz=own.z;want=6;D.ft=(D.ft||0)+dt;if(D.ft>16)D.pos.set(own.x-1.5,0,own.z-1);
+    if(od<1.6){D.mode='roam';D.t=2;D.m.stick.visible=false;STICK.s=null;STICK.m.visible=true;STICK.m.position.set(own.x+Math.sin(player.yaw)*.9,groundH(own.x,own.z)+.03,own.z+Math.cos(player.yaw)*.9);STICK.m.rotation.set(0,player.yaw,Math.PI/2);D.wagT=2;quest('fetch')}}
+  else if(loose&&G.mode==='play'){const hd=Math.hypot(loose.pos.x-D.pos.x,loose.pos.z-D.pos.z);
+    if(D.mode!=='seek'&&D.mode!=='call')D.mode='seek';
+    if(D.mode==='seek'){D.tx=loose.pos.x+2*Math.cos(D.ang);D.tz=loose.pos.z+2*Math.sin(D.ang);want=hd>3?7:0;if(hd<3.5){sit=true;if(D.barkT<0){D.barkT=1.2+D.i*.3;bark=true}if(od>22)D.mode='call'}}
+    else{D.tx=own.x;D.tz=own.z;want=7;if(od<4){D.mode='seek';Snd.bark(pitch);D.barkT=.8}}}
+  else{if(D.mode==='seek'||D.mode==='call'||D.mode==='fetch')D.mode='roam';
+    if(od>7){D.tx=own.x-Math.sin(oy)*2+Math.cos(D.ang)*2.2;D.tz=own.z-Math.cos(oy)*2+Math.sin(D.ang)*2.2;want=Math.min(9,od*1.1)}
+    else{if(D.t<=0){D.t=rand(2,5);if(Math.random()<.3)D.sitT=rand(2,4);else{D.tx=own.x+rand(-6,6);D.tz=own.z+rand(-6,6)}}
       const dd=Math.hypot(D.tx-D.pos.x,D.tz-D.pos.z);want=D.sitT>0?0:dd>.8?2.6:0;D.sitT-=dt;sit=D.sitT>0}}
   const dx=D.tx-D.pos.x,dz=D.tz-D.pos.z,dd=Math.hypot(dx,dz);if(dd<.5)want=0;
   D.speed=damp(D.speed,want,4,dt);if(dd>.3&&want>0)D.yaw=dampA(D.yaw,Math.atan2(dx,dz),6,dt);
-  D.pos.x+=Math.sin(D.yaw)*D.speed*dt;D.pos.z+=Math.cos(D.yaw)*D.speed*dt;collide(D.pos,.3);D.pos.y=groundH(D.pos.x,D.pos.z);
-  if(bark){Snd.bark()}else if(Math.random()<dt*.04&&od<12)Snd.bark();
-  if(surfaceAt(D.pos.x,D.pos.z)==='water'&&D.speed>1&&Math.random()<dt*8)PT.emit('splash',D.pos.x,L.waterY+.05,D.pos.z,2,{size:.5});
-  D.m.g.position.copy(D.pos);D.m.g.rotation.y=D.yaw;D.m.animate(dt,{speed:D.speed,sit:sit&&D.speed<.5,wag:D.wagT>0||bark,bark,sniff:false});
-  // pinnen i luften
-  if(D.stick&&D.stick.fly){const s=D.stick;s.v.y-=14*dt;s.p.addScaledVector(s.v,dt);const gh=groundH(s.p.x,s.p.z);if(s.p.y<gh+.04){s.p.y=gh+.04;s.fly=false;Snd.thud()}
-    D.stickM.position.copy(s.p);D.stickM.rotation.x+=dt*12}}
-function petDog(){DOG.wagT=3;DOG.sitT=2;DOG.mode='roam';Snd.bark();PT.emit('heart',DOG.pos.x,DOG.pos.y+.9,DOG.pos.z,8,{r:.4});player.work=.8}
-function throwStick(){const D=DOG;if(D.stick)return;const y=player.yaw;D.stick={p:new V3(player.pos.x+Math.sin(y)*.4,player.pos.y+1.2,player.pos.z+Math.cos(y)*.4),v:new V3(Math.sin(y)*9,4.5,Math.cos(y)*9),fly:true};
-  D.stickM.visible=true;D.stickM.position.copy(D.stick.p);D.mode='fetch';D.ft=0;player.cheer=.6;Snd.whoosh();setTimeout(()=>Snd.bark(),250)}
+  D.pos.x+=Math.sin(D.yaw)*D.speed*dt;D.pos.z+=Math.cos(D.yaw)*D.speed*dt;collide(D.pos,.3);
+  DOGS.forEach(o=>{if(o===D)return;const ex=D.pos.x-o.pos.x,ez=D.pos.z-o.pos.z,e=Math.hypot(ex,ez);if(e<.7&&e>.01){D.pos.x+=ex/e*(.7-e)*.5;D.pos.z+=ez/e*(.7-e)*.5}});
+  D.pos.y=groundH(D.pos.x,D.pos.z);
+  if(bark)Snd.bark(pitch);else if(Math.random()<dt*.03&&od<12)Snd.bark(pitch);
+  if(surfaceAt(D.pos.x,D.pos.z)==='water'&&D.speed>1&&Math.random()<dt*8)PT.emit('splash',D.pos.x,LASTWY+.05,D.pos.z,2,{size:.5});
+  D.m.g.position.copy(D.pos);D.m.g.rotation.y=D.yaw;D.m.animate(dt,{speed:D.speed,sit:sit&&D.speed<.5,wag:D.wagT>0||bark,bark})}
+function petDog(D){D=D||nearestDog(player.pos,3);if(!D)return;D.wagT=3;D.sitT=2;D.mode='roam';Snd.bark(1.15/DOGTYPES[D.d.type].sz);PT.emit('heart',D.pos.x,D.pos.y+.9,D.pos.z,8,{r:.4});player.work=.8}
+function throwStick(){if(STICK.s)return;const D=nearestDog(player.pos,12);if(!D)return;const y=player.yaw;
+  STICK.s={p:new V3(player.pos.x+Math.sin(y)*.4,player.pos.y+1.2,player.pos.z+Math.cos(y)*.4),v:new V3(Math.sin(y)*9,4.5,Math.cos(y)*9),fly:true};
+  STICK.m.visible=true;STICK.m.position.copy(STICK.s.p);D.mode='fetch';D.ft=0;player.cheer=.6;Snd.whoosh();setTimeout(()=>Snd.bark(),250)}
+function buyDog(type){if(S.dogs.length>=4){note('Du har redan fyra hundar – det räcker! 🐶');return false}
+  const used=S.dogs.map(d=>d.name);const nm=DOGNAMES.filter(n=>!used.includes(n));let name=prompt('Vad ska hunden heta?',pick(nm.length?nm:DOGNAMES));if(!name||!name.trim())name=pick(DOGNAMES);
+  const d={name:name.trim().slice(0,14),type};S.dogs.push(d);const D=spawnDog(d,S.dogs.length-1);D.pos.set(L.shop.x+1,0,L.shop.z+3);D.wagT=4;Snd.bark();return true}
 
 // ---------- busiga rymningar ----------
-const HIDEOUTS=[[62,-28,'i skogen'],[88,-22,'på stranden'],[-52,-29,'bakom stallet'],[2,44,'på ängen'],[-62,14,'vid vägen'],[36,14,'vid ridbanan']];
+const HIDEOUTS=[[62,-28,'i skogen'],[88,-22,'på stranden'],[-52,-29,'bakom stallet'],[28,46,'på ängen'],[-62,14,'vid vägen'],[36,14,'vid ridbanan']];
 function startEscape(h){const w=h.w;w.mode='escape';w.x=8;w.z=-23;w.sp=6;h.buckT=1.2;Snd.neigh();say(h,['Hihi, grinden är öppen…','Dags för äventyr! 😈'],true)}
 function goLoose(h){const w=h.w,hd=pick(HIDEOUTS);h.state='loose';h.found=false;w.home=hd;w.mode='runaway';w.x=hd[0];w.z=hd[1];w.sp=7;w.t=9;h.escFrom=h.pos.clone();
   say(h,['Frihet! Hej då! 🏃‍♀️','Fånga mig om du kan!'],true);Snd.neigh();toast(h.d.name+' rymde! 🐎💨','Leta efter henne – följ '+dogName()+' 🐶')}
@@ -1523,14 +1559,172 @@ function updateLoose(h,dt){const w=h.w;w.t-=dt;let graze=false;const home=w.home
   else if(w.mode==='graze'){h.speed=damp(h.speed,0,4,dt);graze=w.t>.5;if(w.t<=0){w.mode='walk';w.sp=Math.random()<.2?5:1.5;w.x=home[0]+rand(-6,6);w.z=home[1]+rand(-6,6)}}
   else{const dx=w.x-h.pos.x,dz=w.z-h.pos.z,d=Math.hypot(dx,dz);h.speed=damp(h.speed,d>1?w.sp:0,2,dt);h.yaw=dampA(h.yaw,Math.atan2(dx,dz),2.5,dt);if(d<1.3||w.t<-8){w.mode='graze';w.t=rand(4,9)}}
   h.pos.x+=Math.sin(h.yaw)*h.speed*dt;h.pos.z+=Math.cos(h.yaw)*h.speed*dt;collide(h.pos,.6);h.pos.y=groundH(h.pos.x,h.pos.z);
-  if(!h.found&&w.mode!=='runaway'&&Math.hypot(player.pos.x-h.pos.x,player.pos.z-h.pos.z)<12&&G.ride<0){h.found=true;toast('Där är du ju, '+h.d.name+'! 🔍');say(h,['Hihi, ni hittade mig!','Jag gömde mig inte. Typ.'],true);DOG.wagT=3}
+  if(!h.found&&w.mode!=='runaway'&&Math.hypot(player.pos.x-h.pos.x,player.pos.z-h.pos.z)<12&&G.ride<0){h.found=true;toast('Där är du ju, '+h.d.name+'! 🔍');say(h,['Hihi, ni hittade mig!','Jag gömde mig inte. Typ.'],true);DOGS.forEach(D=>D.wagT=3)}
   return {graze}}
+// ================= VAGN, GALOPP & BERGEN =================
+// ---------- vagnen ----------
+const CART={g:null,attached:false,pos:new V3(-6,0,-10.5),yaw:Math.PI/2,wheels:[],seat:null};
+function makeCart(){const g=new THREE.Group(),pk=new THREE.MeshStandardMaterial({color:'#ff4f9a',roughness:.45}),wh=mat('#fbf8f2',{roughness:.5}),wd=mat('#7a5034'),dk=mat('#2b2230');
+  const body=new THREE.Group();g.add(body);
+  part(boxG(1.3,.12,1.0),wd,body,0,.62,0);part(boxG(1.3,.38,.08),pk,body,0,.82,-.48);part(boxG(.08,.3,1.0),pk,body,.63,.78,0);part(boxG(.08,.3,1.0),pk,body,-.63,.78,0);
+  part(boxG(1.1,.1,.42),wh,body,0,.95,-.15);part(boxG(1.1,.5,.08),wh,body,0,1.18,-.36);part(boxG(1.0,.06,.5),wd,body,0,.42,.65);
+  for(const s of[-1,1]){const sh=part(boxG(.06,.06,2.1),wd,body,s*.42,.78,1.45);sh.rotation.x=-.08}
+  for(const s of[-1,1]){const w=new THREE.Group();w.position.set(s*.78,.55,0);g.add(w);const t=part(new THREE.TorusGeometry(.5,.05,8,22),dk,w);t.rotation.y=Math.PI/2;
+    for(let k=0;k<6;k++){const sp=part(boxG(.03,.95,.03),wh,w);sp.rotation.x=k*Math.PI/6}part(cylG(.08,.08,.12,10),pk,w).rotation.z=Math.PI/2;CART.wheels.push(w)}
+  part(cylG(.03,.03,1.6,6),dk,g,0,.55,0).rotation.z=Math.PI/2;
+  const seat=new THREE.Group();seat.position.set(0,.95,-.15);g.add(seat);CART.seat=seat;
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g}
+function cartInit(){CART.g=makeCart();scene.add(CART.g);parkCart(CART.pos.x,CART.pos.z,CART.yaw)}
+function parkCart(x,z,yaw){const c=CART;c.attached=false;scene.add(c.g);c.g.scale.setScalar(1);c.pos.set(x,groundH(x,z),z);c.yaw=yaw;c.g.position.copy(c.pos);c.g.rotation.set(0,yaw,0);
+  COL.circ=COL.circ.filter(q=>!q.cart);const q=[x,z,1.1];q.cart=1;COL.circ.push(q)}
+function hitchCart(){const h=G.horses[G.lead];if(!h)return;const br=breedOf(h.d.breed),cs=Math.max(.68,br.s);
+  COL.circ=COL.circ.filter(q=>!q.cart);G.ride=h.i;G.lead=-1;h.state='ride';h.m.setTack(true);G.cart=true;CART.attached=true;
+  h.m.g.add(CART.g);CART.g.position.set(0,0,-(0.95*br.s+1.05*cs));CART.g.rotation.set(0,0,0);CART.g.scale.setScalar(cs);
+  const pg=player.model.g;CART.seat.add(pg);pg.position.set(0,-.66+.1,0);pg.rotation.set(0,0,0);pg.scale.setScalar(1/cs);player.model.setHelmet(true);
+  G.gallop=false;G.cam.yaw=h.yaw;Snd.snort();setRideUI(true);say(h,['Okej, jag drar. Du styr.','Häst och vagn – klassiskt! 🛞'],true);quest('cart')}
+function unhitchCart(h){const off=-(0.95*breedOf(h.d.breed).s+1.05*CART.g.scale.x);
+  CART.seat.remove(player.model.g);scene.add(player.model.g);player.model.g.scale.set(1,1,1);player.model.setHelmet(false);
+  h.m.g.remove(CART.g);G.cart=false;parkCart(h.pos.x+Math.sin(h.yaw)*off,h.pos.z+Math.cos(h.yaw)*off,h.yaw);
+  player.pos.set(h.pos.x+Math.cos(h.yaw)*1.3,0,h.pos.z-Math.sin(h.yaw)*1.3);collide(player.pos,.38);player.yaw=h.yaw}
+function updateCart(dt){if(!CART.g)return;if(CART.attached&&G.ride>=0){const h=G.horses[G.ride];CART.wheels.forEach(w=>w.rotation.x+=h.speed*dt/.5)}}
+
+// ---------- galoppbanan ----------
+function trackPt(s,off=0){const T=TRACK,L2=T.L;s=((s%L2)+L2)%L2;const A=T.A,r=T.rc+off,a2=2*A,ar=Math.PI*T.rc;
+  if(s<a2)return {x:T.cx-A+s,z:T.cz-r,yaw:Math.PI/2};
+  if(s<a2+ar){const a=(s-a2)/T.rc;return {x:T.cx+A+r*Math.sin(a),z:T.cz-r*Math.cos(a),yaw:Math.atan2(Math.cos(a),Math.sin(a))}}
+  if(s<2*a2+ar){const u=s-(a2+ar);return {x:T.cx+A-u,z:T.cz+r,yaw:-Math.PI/2}}
+  const a=(s-(2*a2+ar))/T.rc;return {x:T.cx-A-r*Math.sin(a),z:T.cz+r*Math.cos(a),yaw:Math.atan2(-Math.cos(a),-Math.sin(a))}}
+function trackS(x,z){let best=0,bd=1e9;for(let i=0;i<240;i++){const s=i/240*TRACK.L,p=trackPt(s);const d=(p.x-x)**2+(p.z-z)**2;if(d<bd){bd=d;best=s}}return best}
+const RACE_START=12;
+(function buildTrack(){const posts=[],rails=[];const gap=s=>s>RACE_START+12&&s<RACE_START+20;
+  for(const off of[-TRACK.w/2-.1,TRACK.w/2+.1]){const N=Math.round(TRACK.L*(1+off/TRACK.rc)/2.6);let prev=null;
+    for(let i=0;i<=N;i++){const s=i/N*TRACK.L,p=trackPt(s,off);const open=off>0&&gap(s);
+      if(!open)posts.push([p.x,p.z]);if(prev&&!open&&!prev.open){rails.push([prev.x,prev.z,p.x,p.z]);COL.segs.push([prev.x,prev.z,p.x,p.z])}prev={x:p.x,z:p.z,open}}}
+  const m=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.6});const pg=new THREE.BoxGeometry(.12,1.1,.12);pg.translate(0,.55,0);
+  const pi=new THREE.InstancedMesh(pg,m,posts.length);posts.forEach((p,i)=>pi.setMatrixAt(i,M4(p[0],groundH(p[0],p[1]),p[1])));
+  const ri=new THREE.InstancedMesh(new THREE.BoxGeometry(.08,.1,1),m,rails.length);rails.forEach((r,i)=>{const cx=(r[0]+r[2])/2,cz=(r[1]+r[3])/2;ri.setMatrixAt(i,M4(cx,groundH(cx,cz)+1.02,cz,1,1,Math.hypot(r[2]-r[0],r[3]-r[1]),Math.atan2(r[2]-r[0],r[3]-r[1])))});
+  pi.castShadow=ri.castShadow=true;scene.add(pi,ri);
+  const sp=trackPt(RACE_START);for(const off of[-2.6,2.6]){const p=trackPt(RACE_START,off);box(.2,3,.2,mat('#ffffff'),p.x,1.5,p.z)}
+  const sg=new THREE.Mesh(signGeo(5.4,.8),new THREE.MeshBasicMaterial({map:textTex('GALOPPBANAN',{w:540,h:80,size:58,bg:'#ffcf33',border:'#2b1745'})}));sg.position.set(sp.x,3.1,sp.z);sg.rotation.y=Math.PI/2;scene.add(sg);
+  box(.06,.02,5,mat('#ffffff'),sp.x,.03,sp.z);
+  // liten läktare vid upploppet
+  for(let t=0;t<2;t++)box(12,.5+t*.5,1.2,mat('#e9e4f2'),sp.x+4,(.5+t*.5)/2,sp.z-4.2-t*1.2);COL.rects.push([sp.x-2,sp.x+10,sp.z-6.6,sp.z-3.6]);
+})();
+const RACE_NAMES=['Blixten','Stormvind','Kometen','Raketen','Virvel','Nordstjärnan','Tornado'];
+function raceLevelSpeed(){const lv=S.rivals===undefined?1:S.rivals;return [6.1,6.8,7.45][lv]}
+function startRace(){const h=G.horses[G.ride];if(!h||G.cart||G.race)return;closeModals();
+  const s0=RACE_START,p=trackPt(s0,0);h.pos.set(p.x,0,p.z);h.yaw=p.yaw;h.speed=0;G.cam.yaw=p.yaw;
+  player.model.setLook(Object.assign({},S.rider,{shirt:'#ffcf33',helmet:'#ff4f9a'}));
+  const ai=[];const offs=[-1.9,1.9,-.9,.95],base=raceLevelSpeed();const names=RACE_NAMES.slice().sort(()=>Math.random()-.5);
+  for(let i=0;i<4;i++){const d=newHorseData(names[i]);d.coat=pick(['brun','svart','fux','skimmel','palomino']);d.pad=pick(PADS);const m=makeHorse(d);m.setTack(true);scene.add(m.g);
+    const r=makeRider({skin:Math.floor(rand(0,6)),hair:Math.floor(rand(0,6)),style:'kort',shirt:pick(['#3fa8ff','#2fd6a6','#8a5cff','#ff7a3d','#ffffff']),pants:'#ffffff',helmet:pick(HELMS)});r.setHelmet(true);m.body.add(r.g);r.g.position.set(0,.52-.66,.02);
+    ai.push({n:names[i],m,r,off:offs[i],p:-1.2-(i%2)*1.6,v:0,top:base+rand(0,.4),ph:rand(0,6),done:-1})}
+  G.race={t:0,go:false,prog:0,lastS:s0,ai,laps:2,spurt:0,spurtCd:0,done:false,finishOrder:[]};
+  $('#comphud').hidden=false;$('#comphud').innerHTML='<div class="pill">⏱ <b id="rTime">0.0</b></div><div class="pill">🔁 <b id="rLap">1/2</b></div><div class="pill">🏁 <b id="rPlace">–</b></div>';
+  $('#bJump').textContent='SPURT 💨';renderQuest();
+  const el=$('#countdown');el.hidden=false;let n=3;const tick=()=>{if(!G.race)return;if(n>0){el.textContent=n;Snd.beep(false);n--;setTimeout(tick,800)}else{el.textContent='KÖR!';Snd.beep(true);G.race.go=true;Snd.cheer();setTimeout(()=>el.hidden=true,700)}};tick()}
+function raceSpurt(){const r=G.race,h=G.horses[G.ride];if(!r||!r.go||r.spurtCd>0)return;if(h.d.st.energy<6){say(h,'tired',true);return}r.spurt=2.6;r.spurtCd=5;h.d.st.energy-=3;Snd.whoosh();PT.emit('dust',h.pos.x,h.pos.y+.1,h.pos.z,10,{r:1})}
+function updateRace(dt,h){const r=G.race;if(!r||r.done)return;if(r.go)r.t+=dt;r.spurt-=dt;r.spurtCd-=dt;
+  const L2=TRACK.L,s=trackS(h.pos.x,h.pos.z);let ds=s-r.lastS;if(ds>L2/2)ds-=L2;if(ds<-L2/2)ds+=L2;r.prog+=ds;r.lastS=s;
+  // AI
+  r.ai.forEach(a=>{if(r.go){const fin=a.p>r.laps*L2*.75;const tv=a.top*(1+.04*Math.sin(r.t*.7+a.ph))*(fin?1.04:1);a.v=damp(a.v,a.done>=0?2:tv,1.2,dt);a.p+=a.v*dt;
+      if(a.done<0&&a.p>=r.laps*L2){a.done=r.t;r.finishOrder.push(a)}}
+    const q=trackPt(RACE_START+a.p,a.off);a.m.g.position.set(q.x,groundH(q.x,q.z),q.z);a.m.g.rotation.y=q.yaw;a.m.animate(dt,{speed:a.v});a.r.animate(dt,{ride:true,bounce:a.v>6?(Math.sin(a.m.phase*6.28)*.5+.5)*.05:0,lean:.35})});
+  // vägvisare
+  const t=trackPt(s+14,0);const ang=Math.atan2(t.x-h.pos.x,t.z-h.pos.z);G.arrow.visible=true;G.arrow.position.set(h.pos.x+Math.sin(ang)*2.4,groundH(h.pos.x,h.pos.z)+.12,h.pos.z+Math.cos(ang)*2.4);G.arrow.rotation.y=ang;
+  const lap=Math.min(r.laps,Math.floor(Math.max(0,r.prog)/L2)+1);const place=1+r.ai.filter(a=>a.p>r.prog).length;
+  $('#rTime').textContent=r.t.toFixed(1);$('#rLap').textContent=lap+'/'+r.laps;$('#rPlace').textContent=place+':a';
+  if(r.prog>=r.laps*L2)finishRace(h);if(r.t>200)finishRace(h)}
+function finishRace(h){const r=G.race;r.done=true;G.arrow.visible=false;const place=1+r.finishOrder.length;const prize=[100,50,25,10,5][place-1]||5;
+  const lv=S.rivals===undefined?1:S.rivals;const money=Math.round(prize*[.7,1,1.5][lv]);S.money+=money;if(place===1){h.d.raceWins=(h.d.raceWins||0)+1;quest('race')}
+  if(place<=3){Snd.fanfare();Snd.cheer();for(let i=0;i<5;i++)setTimeout(()=>PT.emit('confetti',h.pos.x,h.pos.y+3,h.pos.z,30,{r:3}),i*250);player.cheer=4}else Snd.sad();
+  say(h,place===1?['Ingen slår mig! 🏆','Snabbast i stan!']:['Nästa gång!','Jag var visst lite trött…'],true);
+  setTimeout(()=>{openModal('#mRes');G.paused=false;$('#resTitle').textContent=place===1?'🏆 NI VANN LOPPET!':place<=3?'🎉 Pallplats!':'Bra kämpat!';
+    const rows=r.finishOrder.slice(0,place-1).map(a=>[a.n,a.done]).concat([[(S.rider.name||'Du')+' & '+h.d.name,r.t,1]]).concat(r.ai.filter(a=>!r.finishOrder.includes(a)).map(a=>[a.n,null]));
+    $('#resBody').innerHTML=`<div class="big-em">${['','🥇','🥈','🥉'][place]||'🎀'}</div><p class="center" style="font-weight:900;font-size:18px;margin:6px 0 12px">${place}:a plats · ${r.t.toFixed(1)} s · +${money} 🪙</p>
+      <table class="res">${rows.map((x,i)=>`<tr class="${x[2]?'me':''}"><td>${i+1}.</td><td>${x[0]}</td><td>${x[1]!==null?x[1].toFixed(1)+' s':'–'}</td></tr>`).join('')}</table><div class="row mt"><button class="btn pink" id="bRaceDone">Klar ✓</button></div>`;
+    $('#bRaceDone').onclick=()=>{Snd.click();endRace()}},1200);saveGame()}
+function endRace(){const r=G.race;if(!r)return;closeModals();r.ai.forEach(a=>scene.remove(a.m.g));G.race=null;G.arrow.visible=false;$('#countdown').hidden=true;
+  $('#comphud').hidden=true;$('#comphud').innerHTML='<div class="pill">⏱ <b id="cTime">0.0</b></div><div class="pill">🚧 <b id="cJumps">0/8</b></div><div class="pill">❌ <b id="cFaults">0</b></div>';
+  $('#bJump').textContent='HOPPA!';player.model.setLook(S.rider);player.model.setHelmet(G.ride>=0);renderQuest()}
+
+// ---------- bergen ----------
+const MX=-560;
+(function buildMountains(){
+  const T=[[-604,0,0],[-640,18,3],[-680,8,7],[-715,-28,12],[-752,-52,17],[-795,-40,22],[-828,-4,28],[-858,36,34],[-900,58,41],[-940,40,48],[-965,4,55]];
+  const lake={x:-748,z:-18,r:15};
+  function near(x,z){let bd=1e9,bt=0;for(let i=0;i<T.length-1;i++){const a=T[i],b=T[i+1],vx=b[0]-a[0],vz=b[1]-a[1],l=vx*vx+vz*vz;let t=clamp(((x-a[0])*vx+(z-a[1])*vz)/l,0,1);
+      const d=Math.hypot(x-a[0]-vx*t,z-a[1]-vz*t);if(d<bd){bd=d;bt=lerp(a[2],b[2],t)}}return [bd,bt]}
+  function raw(x,z){const [d,th]=near(x,z);const n=fbm(x*.011+20,z*.011-8);const wall=(n*90+12)*sstep(14,95,d)+sstep(60,160,d)*70+(fbm(x*.03,z*.03)-.5)*6*sstep(8,30,d);
+    let h=th+wall+(fbm(x*.08,z*.08)-.5)*1.2*sstep(3,8,d);
+    const ld=Math.hypot(x-lake.x,z-lake.z);if(ld<lake.r+10){const lh=lake.y-1.4*(1-ld/lake.r);h=lerp(Math.min(h,ld<lake.r?lh:h),h,sstep(lake.r,lake.r+10,ld))}
+    if(x>-610)h=Math.min(h,lerp(0,h,sstep(-600,-612,x)));return h}
+  lake.y=near(lake.x,lake.z)[1]+.2;
+  const G2={x0:-1060,z0:-230,st:3,nx:180,nz:154};G2.h=new Float32Array(G2.nx*G2.nz);
+  for(let j=0;j<G2.nz;j++)for(let i=0;i<G2.nx;i++)G2.h[j*G2.nx+i]=raw(G2.x0+i*G2.st,G2.z0+j*G2.st);
+  MTN.h=(x,z)=>{const fx=clamp((x-G2.x0)/G2.st,0,G2.nx-1.001),fz=clamp((z-G2.z0)/G2.st,0,G2.nz-1.001),i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j,k=j*G2.nx+i;
+    return lerp(lerp(G2.h[k],G2.h[k+1],u),lerp(G2.h[k+G2.nx],G2.h[k+G2.nx+1],u),v)};
+  MTN.water=(x,z)=>Math.hypot(x-lake.x,z-lake.z)<lake.r-1&&MTN.h(x,z)<lake.y-.05?lake.y:null;
+  MTN.near=near;MTN.T=T;MTN.lake=lake;
+  // mesh
+  const nx=G2.nx,nz=G2.nz,pos=new Float32Array(nx*nz*3),col=new Float32Array(nx*nz*3),uv=new Float32Array(nx*nz*2);
+  const cG=hexRGB('#5aa64a'),cF=hexRGB('#3e7f3a'),cR=hexRGB('#8f8a84'),cR2=hexRGB('#6f6b68'),cS=hexRGB('#f6f8ff'),cD=hexRGB('#b99470');
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=j*nx+i,x=G2.x0+i*G2.st,z=G2.z0+j*G2.st,h=G2.h[k];pos[k*3]=x;pos[k*3+1]=h;pos[k*3+2]=z;
+    const [d,th]=near(x,z),n=fbm(x*.1,z*.1),rel=h-th;const hx=G2.h[j*nx+Math.min(nx-1,i+1)]-G2.h[j*nx+Math.max(0,i-1)],hz=G2.h[Math.min(nz-1,j+1)*nx+i]-G2.h[Math.max(0,j-1)*nx+i];const slope=Math.hypot(hx,hz)/(2*G2.st);
+    let c=mixC(cG,cF,clamp(n*1.3-.2,0,1));c=mixC(c,hexRGB('#9bb85a'),sstep(25,55,h)*.5);c=mixC(c,mixC(cR,cR2,n),Math.max(sstep(.55,.95,slope+(n-.5)*.3),sstep(10,24,rel)*.85));c=mixC(c,cS,sstep(62,78,h+n*10)*(1-sstep(1.4,1.9,slope)));
+    c=mixC(c,cD,(1-sstep(1.4,2.6,d+(n-.5)))*.9);col[k*3]=c[0];col[k*3+1]=c[1];col[k*3+2]=c[2];uv[k*2]=i/(nx-1)*3;uv[k*2+1]=j/(nz-1)*3}
+  const idx=[];for(let j=0;j<nz-1;j++)for(let i=0;i<nx-1;i++){const a=j*nx+i,b=a+nx,c=a+1,d=b+1;idx.push(a,b,c,c,b,d)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
+  const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,map:TX.detail,roughness:.95,flatShading:false}));mesh.receiveShadow=true;scene.add(mesh);
+  // sjö
+  const lm=new THREE.Mesh(new THREE.CircleGeometry(lake.r+2,40),new THREE.MeshStandardMaterial({color:'#3fa0d8',roughness:.12,metalness:.1,transparent:true,opacity:.82}));lm.rotation.x=-Math.PI/2;lm.position.set(lake.x,lake.y,lake.z);scene.add(lm);
+  // granar
+  const r2=mulberry(99),pts=[];for(let n=0;n<9000&&pts.length<520;n++){const x=-1040+r2()*470,z=-200+r2()*400,[d]=near(x,z);if(d<7||d>90)continue;const h=MTN.h(x,z);if(h>60)continue;if(Math.hypot(x-lake.x,z-lake.z)<lake.r+3)continue;pts.push([x,z,h])}
+  const pineG=mergeGeos([{geo:new THREE.ConeGeometry(1.7,2.6,8),m:M4(0,2.4,0)},{geo:new THREE.ConeGeometry(1.35,2.2,8),m:M4(0,3.6,0)},{geo:new THREE.ConeGeometry(.95,1.8,8),m:M4(0,4.7,0)},{geo:new THREE.CylinderGeometry(.2,.28,1.4,6),m:M4(0,.7,0),color:'#6b4a2e'}]);
+  const pm=new THREE.InstancedMesh(pineG,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85,flatShading:true}),pts.length);const cc=new THREE.Color();
+  pts.forEach((p,i)=>{const s=.8+r2()*.8;pm.setMatrixAt(i,M4(p[0],p[2]-.1,p[1],s,s*(1+r2()*.3),s,r2()*6));pm.setColorAt(i,cc.setHSL(.33+r2()*.05,.4+r2()*.2,.22+r2()*.08))});pm.castShadow=true;scene.add(pm);
+  // flaggor
+  MTN.flags=[];[2,4,5,7,8].forEach((ti,k)=>{const p=T[ti];const fg=new THREE.Group();fg.position.set(p[0]+3,MTN.h(p[0]+3,p[1]),p[1]);scene.add(fg);box(.08,2.6,.08,mat('#ffffff'),0,1.3,0,fg);
+    const f=new THREE.Mesh(signGeo(.9,.6),new THREE.MeshBasicMaterial({map:textTex(String(k+1),{w:128,h:86,size:66,bg:['#ff4f9a','#ffcf33','#2fd6a6','#3fa8ff','#8a5cff'][k],color:'#ffffff'})}));f.position.set(.48,2.25,0);fg.add(f);MTN.flags.push({g:fg,x:p[0]+3,z:p[1],got:false})});
+  // toppen
+  const top=T[T.length-1],tg=new THREE.Group();tg.position.set(top[0],MTN.h(top[0],top[1]),top[1]);scene.add(tg);
+  for(let k=0;k<6;k++)part(new THREE.DodecahedronGeometry(.6-k*.08,0),mat('#9a958c',{flatShading:true}),tg,rand(-.2,.2),.4+k*.45,rand(-.2,.2));
+  box(.1,5,.1,mat('#ffffff'),0,2.5,0,tg);const tf=new THREE.Mesh(signGeo(2.2,1.2),new THREE.MeshBasicMaterial({map:textTex('TOPPEN! 🏔️',{w:300,h:160,size:56,bg:'#ff4f9a',color:'#ffffff'})}));tf.position.set(1.15,4.3,0);tg.add(tf);
+  box(1.8,.12,.5,mat('#8a5a32'),3,.55,2,tg);MTN.top={x:top[0],z:top[1],got:false};
+  // start: skylt
+  const ss=new THREE.Mesh(signGeo(3.4,.8),new THREE.MeshBasicMaterial({map:textTex('BERGSLEDEN ⛰',{w:400,h:94,size:56,bg:'#fff8ef',border:'#2b1745'})}));ss.position.set(-612,2.3,-5);ss.rotation.y=-Math.PI/2;scene.add(ss);box(.12,2,.12,mat('#8a5a32'),-612,1,-5);
+  MTN.ready=true;
+})();
+function mtnClamp(p){const [d]=MTN.near(p.x,p.z);if(d<=11)return;// dra tillbaka mot stigen
+  let best=null,bd=1e9;const T=MTN.T;for(let i=0;i<T.length-1;i++){const a=T[i],b=T[i+1],vx=b[0]-a[0],vz=b[1]-a[1],l=vx*vx+vz*vz;const t=clamp(((p.x-a[0])*vx+(p.z-a[1])*vz)/l,0,1);const cx=a[0]+vx*t,cz=a[1]+vz*t,dd=Math.hypot(p.x-cx,p.z-cz);if(dd<bd){bd=dd;best=[cx,cz]}}
+  p.x=best[0]+(p.x-best[0])/bd*11;p.z=best[1]+(p.z-best[1])/bd*11;p.x=Math.min(p.x,-598)}
+function updateMountain(){if(player.pos.x>MX&&(G.ride<0||G.horses[G.ride].pos.x>MX))return;const p=G.ride>=0?G.horses[G.ride].pos:player.pos;
+  MTN.flags.forEach((f,k)=>{if(f.got)return;if(Math.hypot(p.x-f.x,p.z-f.z)<3.5){f.got=true;S.money+=10;Snd.coin();PT.emit('gold',f.x,p.y+2,f.z,20,{r:.6});toast('Bergsflagga '+(MTN.flags.filter(x=>x.got).length)+'/'+MTN.flags.length,'+10 🪙');f.g.visible=false}});
+  if(!MTN.top.got&&Math.hypot(p.x-MTN.top.x,p.z-MTN.top.z)<5){MTN.top.got=true;S.money+=40;Snd.fanfare();for(let i=0;i<4;i++)setTimeout(()=>PT.emit('confetti',p.x,p.y+3,p.z,30,{r:3}),i*250);
+    toast('Ni nådde toppen! 🏔️','+40 🪙 · Vilken utsikt!');player.cheer=3;const h=G.horses[G.ride];if(h)say(h,['Jag är bergets drottning! 👑','Puh. Men vilken utsikt!'],true);quest('mountain');saveGame()}}
+function tripMountain(){const h=G.horses[G.lead];if(!h)return;if(!breedOf(h.d.breed).ride){note('Minihästar orkar inte långturen – ta en större häst!');return}closeModals();
+  G.mode='cut';showHud(false);fade(true,'🚗 Brrrm… på väg till bergen 🏔️');Snd.engineOn(true);h.state='trailer';
+  setTimeout(()=>{Snd.engineOn(false);COL.rects=COL.rects.filter(r=>!r.car);G.car.g.position.set(-604,groundH(-604,9),9);G.car.g.rotation.y=Math.PI/2;G.carAway='mtn';
+    MTN.flags.forEach(f=>{f.got=false;f.g.visible=true});MTN.top.got=false;
+    h.pos.set(-612,0,0);h.yaw=-Math.PI/2;h.state='lead';G.lead=h.i;mount();G.cam.yaw=-Math.PI/2;G.cam.focus.set(-612,2,0);
+    DOGS.forEach((D,i)=>D.pos.set(-606-i,0,3+i));G.mode='play';showHud(true);setTimeout(()=>{fade(false);toast('Långtur i bergen! 🏔️','Följ stigen – hitta flaggorna och nå toppen')},300)},1700)}
+function tripHome(){const h=G.horses[G.ride>=0?G.ride:G.lead];if(G.ride>=0)dismount();G.mode='cut';showHud(false);fade(true,'🚗 Brrrm… hem till stallet 🏡');Snd.engineOn(true);
+  setTimeout(()=>{Snd.engineOn(false);parkCar('home');G.carAway=null;player.pos.set(-22.5,0,9);player.yaw=Math.PI/2;if(h){h.state='lead';G.lead=h.i;h.pos.set(-21.5,0,6.8);h.yaw=Math.PI/2;h.m.setTack(false)}
+    DOGS.forEach((D,i)=>D.pos.set(-20-i,0,10));G.cam.yaw=Math.PI/2;G.mode='play';showHud(true);setTimeout(()=>fade(false),300);saveGame()},1700)}
+function openTrips(){const h=G.horses[G.lead];if(!h)return;openModal('#mComp');$('#mComp h2').firstChild.textContent='🚗 Vart ska ni åka? ';
+  $('#compList').innerHTML=`<button class="btn sky" id="tComp"><span style="font-size:30px;display:inline">🏆</span><div>Hopptävling<span>Hoppa en bana inför publik och vinn rosetter</span></div></button>
+    <button class="btn mint" id="tMtn"><span style="font-size:30px;display:inline">🏔️</span><div>Långtur i bergen<span>Rid uppför bergsleden, hitta flaggor och nå toppen</span></div></button>`;
+  $('#tComp').onclick=()=>{Snd.click();$('#mComp h2').firstChild.textContent='🏆 Välj klass';openComp()};$('#tMtn').onclick=()=>{Snd.click();tripMountain()}}
+function rideActs(){const h=G.horses[G.ride],out=[];if(!h||G.comp)return out;
+  if(!G.race&&!G.cart&&(Math.hypot(h.pos.x-trackPt(RACE_START).x,h.pos.z-trackPt(RACE_START).z)<22||Math.abs(trackR(h.pos.x,h.pos.z)-TRACK.rc)<TRACK.w/2+1))out.push({label:'🏇 Starta galopplopp',fn:startRace});
+  if(G.carAway==='mtn'&&Math.hypot(h.pos.x+604,h.pos.z-9)<7&&!G.cart)out.push({label:'🏡 Åk hem',fn:tripHome});
+  return out}
 // ================= GRÄNSSNITT =================
 function toast(t,sub){const el=$('#toast');el.innerHTML=t+(sub?'<br><small>'+sub+'</small>':'');el.classList.remove('on');void el.offsetWidth;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1800)}
 function note(t){const el=$('#note');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2800)}
 function fade(on,text){const f=$('#fade');if(text!==undefined)f.textContent=text;f.classList.toggle('on',on)}
 function showHud(on){$('#hud').hidden=!on;if(on)requestAnimationFrame(joyHome)}
-function setRideUI(on){$('#rideBtns').hidden=!on;$('#bGallop').classList.toggle('on',G.gallop);if(on){$('#actA').hidden=$('#actB').hidden=true}}
+function setRideUI(on){$('#rideBtns').hidden=!on;$('#bGallop').classList.toggle('on',G.gallop);$('#bJump').hidden=!!G.cart;$('#bDismount').textContent=G.cart?'Kliv av':'Sitt av';if(on){$('#actA').hidden=$('#actB').hidden=true}}
 function closeModals(){$$('.modal').forEach(m=>m.hidden=true);G.paused=false}
 function openModal(id){$$('.modal').forEach(m=>m.hidden=true);$(id).hidden=false;G.paused=true;G.joy.x=G.joy.y=0}
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{Snd.click();closeModals()}));
@@ -1561,15 +1755,19 @@ function interactions(){const out=[],p=player.pos,near=(x,z,r)=>Math.hypot(p.x-x
     else if(G.lead===h.i)out.push({label:'🏠 Ställ in '+h.d.name,fn:()=>putIn(h)});
     else if(h.state!=='ride')out.push({label:'🧹 Städa boxen',fn:()=>enterCare(h,true)})});
   if(near(L.shop.x,L.shop.z+2.7,2.8))out.push({label:'🛒 Butiken',fn:openShop});
-  if(near(8.2,-23,3.2)||near(11.8,-23,2.6)){if(G.lead>=0)out.push({label:'🌼 Släpp i hagen',fn:releaseHage});else G.horses.filter(h=>h.state==='hage'&&h.w.mode!=='toGate').forEach(h=>out.push({label:'🐴 Hämta '+h.d.name,fn:()=>fetchHage(h)}));
-    out.splice(G.lead>=0?1:out.length,0,{label:HAGE.open?'🔒 Stäng grinden':'🔓 Öppna grinden',fn:()=>setGate(!HAGE.open)})}
+  if(near(8.2,-23,3.2)||near(11.8,-23,2.6)){const hs=G.horses.filter(h=>h.state==='hage'&&h.w.mode!=='toGate');const gate={label:HAGE.open?'🔒 Stäng grinden':'🔓 Öppna grinden',fn:()=>setGate(!HAGE.open)};
+    const first=G.lead>=0?{label:'🌼 Släpp i hagen',fn:releaseHage}:hs.length===1?{label:'🐴 Hämta '+hs[0].d.name,fn:()=>fetchHage(hs[0])}:hs.length>1?{label:'🐴 Hämta en häst…',fn:()=>ask('Vem ska du hämta?','Välj en häst i hagen:',hs.map(h=>({t:h.d.name,c:'pink',f:()=>fetchHage(h)})).concat([{t:'Avbryt'}]))}:null;
+    out.unshift(...(first?[first,gate]:[gate]))}
   if(G.lead<0)G.horses.forEach(h=>{if(h.state==='loose'&&near(h.pos.x,h.pos.z,2.8))out.unshift({label:'🐴 Fånga '+h.d.name,fn:()=>catchLoose(h)})});
-  if(near(-23.4,6,3.4)){if(G.lead>=0)out.push({label:'🚗 Åk på tävling',fn:openComp});else out.push({label:'🚗 Hämta en häst först',fn:()=>note('Ta ut en häst ur boxen eller hagen och led hit den.')})}
+  if(G.carAway==='mtn'&&near(-604,9,4)&&G.lead>=0)out.push({label:'🏡 Åk hem',fn:tripHome});
+  if(G.lead>=0&&!CART.attached&&near(CART.pos.x,CART.pos.z,3.4))out.push({label:'🛞 Spänn för vagnen',fn:hitchCart});
+  if(!G.carAway&&near(-23.4,6,3.4)){if(G.lead>=0)out.push({label:'🚗 Åk iväg',fn:openTrips});else out.push({label:'🚗 Hämta en häst först',fn:()=>note('Ta ut en häst ur boxen eller hagen och led hit den.')})}
   if(G.lead>=0&&breedOf(G.horses[G.lead].d.breed).ride)out.push({label:'🏇 Sitt upp',fn:mount});
-  if(DOG.m){const dd=Math.hypot(p.x-DOG.pos.x,p.z-DOG.pos.z);if(dd<2.4)out.push({label:'🐶 Klappa '+dogName(),fn:petDog});if(dd<9&&!DOG.stick&&!G.horses.some(h=>h.state==='loose'))out.push({label:'🦴 Kasta pinne',fn:throwStick})}
+  {const D=nearestDog(p,2.4);if(D)out.push({label:'🐶 Klappa '+D.d.name,fn:()=>petDog(D)});if(nearestDog(p,9)&&!STICK.s&&!G.horses.some(h=>h.state==='loose'))out.push({label:'🦴 Kasta pinne',fn:throwStick})}
   return out}
 function setBtn(sel,a){const b=$(sel);if(!a){b.hidden=true;b._fn=null;return}b.hidden=false;if(b.textContent!==a.label)b.textContent=a.label;b._fn=a.fn}
-function updateActs(){if(G.mode!=='play'||G.paused||G.ride>=0){$('#actA').hidden=$('#actB').hidden=true;ACTS=[];return}
+function updateActs(){if(G.mode==='play'&&!G.paused&&G.ride>=0){ACTS=rideActs();setBtn('#actA',ACTS[0]);$('#actB').hidden=true;return}
+  if(G.mode!=='play'||G.paused||G.ride>=0){$('#actA').hidden=$('#actB').hidden=true;ACTS=[];return}
   ACTS=interactions();setBtn('#actA',ACTS[0]);setBtn('#actB',ACTS[1])}
 ['#actA','#actB'].forEach(s=>$(s).addEventListener('click',()=>{const f=$(s)._fn;if(f){Snd.click();f()}}));
 $('#bJump').addEventListener('pointerdown',e=>{e.preventDefault();doJump()});
@@ -1584,7 +1782,7 @@ function crHorse(){return CR.mode==='buy'?{d:CR.newH,m:CR.newM}:{d:S.horses[CR.i
 function openCreator(mode,idx=0,breed){CR.mode=mode;CR.idx=idx;closeModals();$('#title').hidden=true;$('#care').hidden=true;showHud(false);
   if(G.mode==='care'){CR.fromCare=G.care;G.care.careMode=false}else CR.fromCare=null;
   G.mode='creator';G.stage={x:3,z:-2};G.stageYaw=0;
-  if(mode==='buy'){CR.newH=newHorseData(null,breed);CR.newH.loc='box';CR.newM=makeHorse(CR.newH);scene.add(CR.newM.g)}
+  if(mode==='buy'){CR.newH=newHorseData(null,breed);if(breed==='unicorn'){CR.newH.coat='vit';CR.newH.mane='rainbow';CR.newH.name=pick(['Regnbåge','Glitter','Stjärnstoft','Fluffy','Magica'])}CR.newH.loc='box';CR.newM=makeHorse(CR.newH);scene.add(CR.newM.g)}
   CR.step=(mode==='horse'||mode==='buy')?'horse':'rider';
   $$('.ctab').forEach(t=>{t.disabled=(mode==='rider'&&t.dataset.step==='horse')||((mode==='horse'||mode==='buy')&&t.dataset.step==='rider');t.classList.toggle('on',t.dataset.step===CR.step)});
   $('#creator').hidden=false;renderCreator();setTimeout(()=>frameMode('left'),30)}
@@ -1601,7 +1799,7 @@ function renderCreator(){const body=$('#cbody');let rows=[];
       rowSw('Hjälm',HELMS,r.helmet,c=>{r.helmet=c;G.showHelm=2})];
     player.model.setLook(r);$('#cNext').textContent=CR.mode==='new'?'Nästa →':'Klar ✓'}
   else{const {d}=crHorse();
-    rows=[rowName('Hästens namn',d.name,'Namn',v=>{d.name=v||d.name},true),rowChips('Ras',BREEDS.map(b=>[b.id,b.em+' '+b.n]),d.breed||'hast',v=>d.breed=v),
+    rows=[rowName('Hästens namn',d.name,'Namn',v=>{d.name=v||d.name},true),...(CR.mode==='buy'?[rowChips('Ras',BREEDS.map(b=>[b.id,b.em+' '+b.n+' · '+b.p+' 🪙']),d.breed||'hast',v=>{d.breed=v;if(v==='unicorn'){d.coat='vit';d.mane='rainbow'}})]:[]),
       rowChips('Pälsfärg',COATS.map(c=>[c.id,c.n,c.c]),d.coat,v=>d.coat=v),
       rowChips('Man & svans',MANES.map(m=>[m[0],m[1],m[0]==='auto'?coatOf(d.coat).m:m[0]==='rainbow'?'linear-gradient(90deg,#ff4f4f,#ffd93d,#3fd67c,#3fa8ff,#8a5cff)':m[0]]),d.mane,v=>d.mane=v),
       rowChips('Mönster',PATTERNS,d.pattern,v=>d.pattern=v),rowChips('Tecken i ansiktet',FACES,d.face,v=>d.face=v),rowChips('Strumpor',SOCKS,d.socks,v=>d.socks=v),
@@ -1653,7 +1851,7 @@ $('#careDone').addEventListener('click',()=>{Snd.click();if(G.sub){endSub();retu
 function updateManure(h){STABLE.manure[h.i].forEach((m,k)=>m.visible=k<h.d.dirt);const f=STABLE.floors[h.i];f.material.color.set('#ffffff').lerp(new THREE.Color('#b0915e'),h.d.dirt/7)}
 function careBtns(){const s=S.sup,h=G.care,r=h.d.ready||{};if(G.careEmpty)return [['muck','💩','Mocka',h.d.dirt+' högar'],['prephay','🌾',r.hay?'Hö ligger i':'Lägg i hö',s.hay+' kvar'],['prepwater','💧',r.water?'Vattnet är fyllt':'Fyll vattnet','Gratis']];
   return [['hay','🌾','Ge hö',s.hay+' kvar'],['water','💧','Vatten','Gratis'],['feed','🥣','Kraftfoder',s.feed+' kvar'],['brush','🧽','Borsta','Gnugga bort smuts'],
-  ['hoof','🐴','Kratsa hovar','Tryck på hovarna'],['muck','💩','Mocka',h.d.dirt+' högar'],['carrot','🥕','Morot',s.carrot+' kvar'],['apple','🍎','Äpple',s.apple+' kvar'],['acc','😎','Prylar','Glasögon m.m.'],['look','🎨','Utseende','Namn & färger']]}
+  ['hoof','🐴','Kratsa hovar','Tryck på hovarna'],['muck','💩','Mocka',h.d.dirt+' högar'],['carrot','🥕','Morot',s.carrot+' kvar'],['apple','🍎','Äpple',s.apple+' kvar'],['acc','😎','Prylar','Glasögon m.m.'],['look','🎨','Utseende','Namn & färger'],['sell','💰','Sälj','Värd ca '+horseValue(h).total+' 🪙']]}
 function renderCare(){const w=$('#careBtns');renderStats($('#careStats'),G.care.d.st,true);
   if(G.sub==='acc'){const h=G.care;const own=SHOPITEMS.filter(i=>i.acc&&S.owned[i.id]);
     w.innerHTML=own.length?own.map(i=>`<button class="btn ${h.d.acc[i.id]?'pink':'white'}" data-a="${i.id}"><em>${i.em}</em>${i.n}<small>${h.d.acc[i.id]?'På':'Av'}</small></button>`).join(''):'<p style="grid-column:1/-1;font-weight:800">Du har inga prylar än. Köp i butiken! 🛒</p>';
@@ -1678,6 +1876,7 @@ function careAct(id){const h=G.care;if(!h||G.sub)return;const st=h.d.st,s=S.sup,
     const hp=new V3();h.m.head.getWorldPosition(hp);PT.emit('heart',hp.x,hp.y+.4,hp.z,10,{r:.6});Snd.munch();say(h,'treat',true);quest('treat')}
   else if(id==='acc'){G.sub='acc';renderCare();return}
   else if(id==='look'){openCreator('horse',h.i);return}
+  else if(id==='sell'){openSell(h);return}
   renderCare();updateHudSlow();saveGame()}
 function startSub(sub){const h=G.care;G.sub=sub;renderCare();
   if(sub==='brush'){careHint('🧽 Gnugga bort smutsen med fingret!');$('#brushCur').hidden=false;h.look=.25}
@@ -1715,16 +1914,18 @@ const SHOPITEMS=[
   {tab:'Prylar',id:'glasses',em:'😎',n:'Solglasögon',d:'Maximal attityd',p:60,acc:1},{tab:'Prylar',id:'crown',em:'🌸',n:'Blomkrans',d:'Prinsess-vibbar',p:50,acc:1},
   {tab:'Prylar',id:'bows',em:'🎀',n:'Rosetter',d:'I man och svans',p:40,acc:1},{tab:'Prylar',id:'glitter',em:'✨',n:'Glitterhovar',d:'Gnistrar när du rider',p:80,acc:1},
   {tab:'Prylar',id:'paint',em:'🚗',n:'Lacka bilen',d:'Välj ny färg',p:40,paint:1},
-  ...BREEDS.map(b=>({tab:'Hästar',id:'horse_'+b.id,em:b.em,n:b.n,d:b.d,p:b.p,horse:b.id}))];
+  ...BREEDS.map(b=>({tab:'Hästar',id:'horse_'+b.id,em:b.em,n:b.n,d:b.d,p:b.p,horse:b.id})),
+  ...Object.entries(DOGTYPES).map(([k,t])=>({tab:'Hundar',id:'dog_'+k,em:t.em,n:t.n,d:'Springer fritt på gården',p:t.p,dog:k}))];
 const CARCOLORS=['#ff4f9a','#8a5cff','#2fd6a6','#ffcf33','#3fa8ff','#ff5a4f','#2b2b33','#ffffff'];
 let SHOPTAB='Foder';
 function openShop(){openModal('#mShop');renderShop()}
-function renderShop(){$$('.mcoins').forEach(e=>e.textContent=S.money);const tabs=['Foder','Godis','Prylar','Hästar'];
+function renderShop(){$$('.mcoins').forEach(e=>e.textContent=S.money);const tabs=['Foder','Godis','Prylar','Hästar','Hundar'];
   $('#shopTabs').innerHTML=tabs.map(t=>`<button class="${t===SHOPTAB?'on':''}">${t}</button>`).join('');$('#shopTabs').querySelectorAll('button').forEach((b,i)=>b.onclick=()=>{SHOPTAB=tabs[i];Snd.click();renderShop()});
   const items=SHOPITEMS.filter(i=>i.tab===SHOPTAB);const inv={hay:S.sup.hay,feed:S.sup.feed,shav:S.sup.shav,carrot:S.sup.carrot,apple:S.sup.apple};
   $('#shopGrid').innerHTML=items.map(i=>{let btn;
     if(i.acc&&S.owned[i.id])btn='<button class="btn mint" disabled>Din! ✓</button>';
     else if(i.paint)btn='<div class="sw" style="justify-content:center">'+CARCOLORS.map(c=>`<button data-paint="${c}" style="background:${c};width:30px;height:30px"></button>`).join('')+'</div>';
+    else if(i.dog&&S.dogs.length>=4)btn='<button class="btn" disabled>Max 4 hundar</button>';
     else if(i.horse&&S.horses.length>=L.boxes.length)btn='<button class="btn" disabled>Stallet är fullt</button>';
     else btn=`<button class="btn ${S.money>=i.p?'':'white'}" data-buy="${i.id}">${i.p} 🪙</button>`;
     return `<div class="item"><div class="em">${i.em}</div><b>${i.n}</b><span>${i.d}${inv[i.id]!==undefined?' · har '+inv[i.id]:''}${i.paint?' · '+i.p+' 🪙':''}</span>${btn}</div>`}).join('');
@@ -1732,9 +1933,23 @@ function renderShop(){$$('.mcoins').forEach(e=>e.textContent=S.money);const tabs
   $('#shopGrid').querySelectorAll('[data-paint]').forEach(b=>b.onclick=()=>{if(S.money<40){Snd.sad();note('Du behöver 40 mynt.');return}S.money-=40;S.carColor=b.dataset.paint;G.car.setColor(S.carColor);Snd.coin();toast('Bilen är lackad! 🚗');saveGame();renderShop()})}
 function buy(i){if(S.money<i.p){Snd.sad();note('Inte tillräckligt med mynt – vinn tävlingar och hitta gyllene hästskor!');return}
   if(i.horse){closeModals();openCreator('buy',0,i.horse);return}
+  if(i.dog){if(S.money<i.p){Snd.sad();note('Inte tillräckligt med mynt.');return}if(!buyDog(i.dog))return;S.money-=i.p;Snd.coin();toast('Ny hund! '+i.em,S.dogs[S.dogs.length-1].name+' väntar utanför butiken');saveGame();renderShop();return}
   S.money-=i.p;Snd.coin();if(i.buy)i.buy();
   if(i.acc){S.owned[i.id]=true;const h=curHorse()||G.horses[0];h.d.acc[i.id]=true;h.m.setLook(h.d);toast(i.em+' '+i.n+'!','Sitter på '+h.d.name+' nu');}
   else toast('Köpt! '+i.em);saveGame();renderShop();updateHudSlow()}
+
+// ---------- sälja häst ----------
+function horseValue(h){const d=h.d,br=breedOf(d.breed),m=d.medals||{1:0,2:0,3:0},st=d.st;
+  const base=Math.round(br.p*.6),med=m[1]*80+m[2]*40+m[3]*20+(d.raceWins||0)*60,exp=Math.min(150,Math.round(d.xp*2));
+  const avg=(st.hunger+st.thirst+st.clean+st.mood)/4,care=avg>85?.25:avg>70?.1:avg<40?-.2:0;
+  const sub=base+med+exp,bonus=Math.round(sub*care);return {base,med,exp,care,bonus,total:Math.max(50,sub+bonus),m}}
+function openSell(h){if(S.horses.length<2){note('Du kan inte sälja din enda häst!');return}if(G.lead>=0||G.ride>=0){note('Ställ in hästen du leder först.');return}
+  const v=horseValue(h);const m=v.m;
+  ask('💰 Sälja '+h.d.name+'?',`Grundpris ${v.base} · Rosetter ${v.med} (🥇${m[1]} 🥈${m[2]} 🥉${m[3]}) · Erfarenhet ${v.exp} · ${v.care>0?'Välskött +'+v.bonus:v.care<0?'Dåligt skött '+v.bonus:'Skötsel ±0'} = ${v.total} 🪙`,
+    [{t:'Nej, behåll'},{t:'Sälj för '+v.total+' 🪙',c:'pink',f:()=>sellHorse(h,v.total)}])}
+function sellHorse(h,price){exitCare();const i=S.horses.indexOf(h.d);if(i<0)return;S.horses.splice(i,1);S.money+=price;Snd.coin();
+  rebuildHorses();G.horses.forEach(x=>updateManure(x));for(let b=S.horses.length;b<L.boxes.length;b++){STABLE.manure[b].forEach(p=>p.visible=false);STABLE.hay[b].visible=false}
+  toast('Såld för '+price+' 🪙','Hej då '+h.d.name+'! 👋');saveGame();updateHudSlow()}
 
 // ---------- karta, meny, tävling ----------
 function openMap(){openModal('#mMap');$('#mapList').innerHTML=PLACES.map((p,i)=>`<button class="btn ${i%2?'white':'sky'}" data-p="${i}"><span style="font-size:30px;display:inline">${p[0]}</span><div>${p[1]}<span>${p[2]}</span></div></button>`).join('');
@@ -1742,8 +1957,9 @@ function openMap(){openModal('#mMap');$('#mapList').innerHTML=PLACES.map((p,i)=>
 function openMenu(){openModal('#mMenu');const rib=S.ribbons.length?S.ribbons.slice(-12).map(r=>['','🥇','🥈','🥉'][r.p]).join(''):'Inga än – åk på tävling!';
   const items=[['▶️ Fortsätt','mint',closeModals],[(Snd.muted?'🔇 Ljud: av':'🔊 Ljud: på'),'white',()=>{Snd.setMuted(!Snd.muted);S.muted=Snd.muted;saveGame();openMenu()}]];
   items.push([S.questsOff?'🎯 Uppdrag: av (bara leka)':'🎯 Uppdrag: på','white',()=>{S.questsOff=!S.questsOff;saveGame();renderQuest();openMenu()}]);
-  items.push(['🐶 Döp om hunden ('+dogName()+')','white',()=>{const n=prompt('Vad ska hunden heta?',dogName());if(n&&n.trim()){S.dogName=n.trim().slice(0,14);saveGame();toast('Hej '+S.dogName+'! 🐶');Snd.bark()}openMenu()}]);
+  DOGS.forEach(D=>items.push(['🐶 Döp om '+D.d.name,'white',()=>{const n=prompt('Vad ska hunden heta?',D.d.name);if(n&&n.trim()){D.d.name=n.trim().slice(0,14);saveGame();toast('Hej '+D.d.name+'! 🐶');Snd.bark()}openMenu()}]));
   if(G.comp&&!G.comp.done)items.push(['🏳️ Ge upp tävlingen','white',()=>{closeModals();goHome()}]);
+  if(G.race)items.push(['🏳️ Avbryt loppet','white',()=>{closeModals();G.race.done=true;endRace()}]);
   else if(G.mode==='play')items.push(['🎨 Ändra din ryttare','white',()=>{if(G.ride>=0)return note('Sitt av först!');openCreator('rider')}]);
   items.push(['🏠 Till startskärmen','white',()=>{closeModals();saveGame();location.reload()}]);
   $('#menuList').innerHTML=`<div class="item" style="text-align:left;align-items:flex-start"><b>🎀 Rosetter</b><span style="font-size:22px;opacity:1">${rib}</span><span>Tävlingar: ${S.stat.comps} · Vinster: ${S.stat.wins} · Hopp: ${S.stat.jumps} · Hästskor: ${S.shoes.length}/${SHOES.list.length}</span></div>`+
@@ -1805,7 +2021,7 @@ function step(dt){G.t+=dt;
   if(G.mode==='creator')stageUpdate(dt);
   if(!G.paused||G.mode!=='play')updateHorses(dt);
   if(G.ride>=0){const h=G.horses[G.ride];const P=h.m.phase*Math.PI*2;const b=h.speed>2.6&&h.speed<6?Math.abs(Math.sin(P*2))*.07:h.speed>=6?(Math.sin(P)*.5+.5)*.05:0;
-    player.model.animate(dt,{ride:true,bounce:b,lean:h.speed>6?.32:h.jumpT>=0?.45:.08,cheer:player.cheer>0});player.cheer-=dt}
+    player.model.animate(dt,{ride:true,cart:!!G.cart,bounce:G.cart?0:b,lean:G.race?.42:h.speed>6?.32:h.jumpT>=0?.45:.08,cheer:player.cheer>0});player.cheer-=dt}
   else if(G.mode==='title'){player.pos.set(-6,0,-6);player.model.g.position.set(-6,0,-6);player.model.g.rotation.y=-2.2;player.model.animate(dt,{speed:0})}
   STABLE.doors.forEach(d=>{d.rotation.y=damp(d.rotation.y,d.userData.open?-1.9:0,6,dt)});updateGate(dt);
   G.jumps.home.forEach(J=>J.update(dt));G.jumps.venue.forEach(J=>J.update(dt));
@@ -1814,7 +2030,8 @@ function step(dt){G.t+=dt;
   updateRope();updateCamera(dt);
   G.uiT+=dt;if(G.uiT>.16){G.uiT=0;updateActs();updateHudSlow()}
   updateBubbles();
-  if(G.mode==='play'||G.mode==='care'||G.mode==='title')updateDog(dt);
+  if(G.mode==='play'||G.mode==='care'||G.mode==='title')updateDogs(dt);
+  updateCart(dt);if(G.mode==='play')updateMountain();
   if(Snd.ctx){const fx=G.cam.focus.x;Snd.waves(clamp(1-(L.shore-fx)/45,0,1)*.28,G.t);if(fx<70&&Math.random()<dt*.25)Snd.chirp()}}
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000)||.016;last=now;if(G.manual)return;step(dt);renderer.render(scene,camera)}
