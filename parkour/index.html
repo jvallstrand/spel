@@ -47,6 +47,8 @@ body.incomp #live{top:calc(var(--st) + 100px)}
 #t1{width:68px;height:68px;right:calc(var(--sr) + 28px);bottom:calc(var(--sb) + 126px);background:rgba(140,95,240,.9)}
 #t2{width:62px;height:62px;right:calc(var(--sr) + 112px);bottom:calc(var(--sb) + 104px);background:rgba(22,163,74,.9)}
 #t3{width:62px;height:62px;right:calc(var(--sr) + 206px);bottom:calc(var(--sb) + 20px);background:rgba(236,72,153,.9)}
+#t4{width:60px;height:60px;right:calc(var(--sr) + 196px);bottom:calc(var(--sb) + 108px);background:rgba(245,158,11,.9)}
+#t5{width:60px;height:60px;right:calc(var(--sr) + 290px);bottom:calc(var(--sb) + 22px);background:rgba(14,165,233,.9)}
 .overlay{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;background:rgba(15,13,25,.88);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
   padding:calc(var(--st) + 12px) calc(var(--sr) + 16px) calc(var(--sb) + 12px) calc(var(--sl) + 16px);overflow-y:auto;box-sizing:border-box;touch-action:pan-y}
 .panel{max-width:760px;width:100%;text-align:center;margin:auto}
@@ -112,6 +114,8 @@ body.incomp #live{top:calc(var(--st) + 100px)}
 <div id="where"></div>
 <div id="stickZone"></div>
 <div id="stickBase"><div id="stickKnob"></div></div>
+<button class="act" id="t5"></button>
+<button class="act" id="t4"></button>
 <button class="act" id="t3"></button>
 <button class="act" id="t0"></button>
 <button class="act" id="t2"></button>
@@ -126,7 +130,7 @@ body.incomp #live{top:calc(var(--st) + 100px)}
     <div class="btns"><button class="big" id="bStart">SPRING!</button><button class="big alt" id="bComps">TÄVLINGAR</button><a class="big alt" href="../">ALLA SPEL</a></div>
     <div id="err" hidden>Spelet kunde inte laddas. Öppna appen med internet en gång.</div>
     <div class="help"><b>På marken:</b> joystick = spring och sväng · HOPP: hoppa · spring in i en låg vägg = klättra upp<br>
-      <b>I luften:</b> åt sidan = 180/360 · knuffa framåt = frontflip · bakåt = backflip · hoppa längs en hög vägg = väggspring (HOPP igen = hoppa ut)<br>
+      <b>I luften:</b> joysticken styr vart du flyger · Frontflip och Backflip är knappar · snurr (180, 360 …) köper du i butiken · hoppa längs en hög vägg = väggspring (HOPP igen = hoppa ut)<br>
       <b>Kullerbytta:</b> tryck innan du landar när du hoppar från något högt, annars ramlar du · <b>Glida:</b> glid på marken i fart · <b>Räcken:</b> landa på ett räcke för att glida · <b>Butiken:</b> spring in på den gröna cirkeln vid butiken på Torget<br>
       🎒 välj kläder och vilka trick som ligger på knapparna · 🗺️ karta (tryck för att springa dit)</div>
     <footer class="appfoot"><span>Version <b class="appver"></b></span><button type="button" class="updBtn">Uppdatera appen</button></footer>
@@ -147,7 +151,7 @@ body.incomp #live{top:calc(var(--st) + 100px)}
 <script>
 (function(){
 'use strict';
-const APP_VERSION='0.2',CACHE_PREFIX='spel-',LS_SAVE='park:save';
+const APP_VERSION='0.3',CACHE_PREFIX='spel-',LS_SAVE='park:save';
 document.querySelectorAll('.appver').forEach(el=>el.textContent=APP_VERSION);
 document.querySelectorAll('.updBtn').forEach(btn=>btn.addEventListener('click',async()=>{
   btn.disabled=true;btn.textContent='Uppdaterar…';
@@ -300,6 +304,12 @@ function whereAmI(x,y,z){
 const ITEMS={
   t_slide:{cat:'trick',name:'Glida',price:0,k:'slide',act:'slide',d:0.9},
   t_roll:{cat:'trick',name:'Kuller\u00ADbytta',price:0,k:'roll',act:'roll',d:0.55},
+  t_front:{cat:'trick',name:'Frontflip',price:0,act:'flip',dir:1},
+  t_back:{cat:'trick',name:'Backflip',price:0,act:'flip',dir:-1},
+  t_180:{cat:'trick',name:'180',price:200,act:'spin',ang:Math.PI,d:0.4},
+  t_360:{cat:'trick',name:'360',price:500,act:'spin',ang:TAU,d:0.6},
+  t_540:{cat:'trick',name:'540',price:1000,act:'spin',ang:Math.PI*3,d:0.8},
+  t_720:{cat:'trick',name:'720',price:1800,act:'spin',ang:TAU*2,d:0.95},
   t_tuck:{cat:'trick',name:'Tuck',price:150,k:'tuck',pts:120,d:0.45},
   t_kick:{cat:'trick',name:'Kick-out',price:300,k:'kickout',pts:140,d:0.5},
   t_super:{cat:'trick',name:'Superman',price:500,k:'super',pts:170,d:0.55},
@@ -337,12 +347,13 @@ const ITEMS={
 };
 const CATS=[['trick','Trick','⭐'],['top','Tröjor','👕'],['pants','Byxor','👖'],['shoe','Skor','👟'],['hat','Kepsar & mössor','🧢']];
 const catIcon=c=>(CATS.find(x=>x[0]===c)||[])[2]||'';
-const DEFAULT_SAVE={money:0,score:0,best:0,own:{t_slide:1,t_roll:1,o_grey:1,p_black:1,h_none:1,s_old:1},top:'o_grey',pants:'p_black',hat:'h_none',shoe:'s_old',slots:['t_slide','t_roll'],comps:{}};
+const DEFAULT_SAVE={money:0,score:0,best:0,own:{t_slide:1,t_roll:1,t_front:1,t_back:1,o_grey:1,p_black:1,h_none:1,s_old:1},top:'o_grey',pants:'p_black',hat:'h_none',shoe:'s_old',slots:['t_slide','t_roll','t_front','t_back'],comps:{}};
 let save=JSON.parse(JSON.stringify(DEFAULT_SAVE));
 try{const s=JSON.parse(localStorage.getItem(LS_SAVE)||'null');if(s&&s.own)save=Object.assign(save,s);}catch(e){}
 // Stjärna och Spagat finns inte längre; Glida och Kullerbytta har alla
-delete save.own.t_star;delete save.own.t_split;save.own.t_slide=1;save.own.t_roll=1;
-save.slots=save.slots.filter(id=>ITEMS[id]&&id!=='t_slide'&&id!=='t_roll');save.slots=['t_slide','t_roll',...save.slots].slice(0,4);
+const FREE=['t_slide','t_roll','t_front','t_back'];
+delete save.own.t_star;delete save.own.t_split;FREE.forEach(id=>save.own[id]=1);
+if(!save.v2){save.slots=[...FREE,...save.slots.filter(id=>ITEMS[id]&&!FREE.includes(id))].slice(0,6);save.v2=1;}
 function persist(){try{localStorage.setItem(LS_SAVE,JSON.stringify(save));}catch(e){}}
 function runStats(){const s=ITEMS[save.shoe];return {maxs:s.maxs,acc:950,frict:750,turn:4.4,jump:s.jump};}
 function lookOf(){const h=ITEMS[save.hat];return {top:ITEMS[save.top].col,pants:ITEMS[save.pants].col,skin:0xf1c7a4,glove:0xf1c7a4,shoe:ITEMS[save.shoe].col,helmet:h.col,hat:h.hat,stripe:0x111111};}
@@ -351,10 +362,10 @@ function lookOf(){const h=ITEMS[save.hat];return {top:ITEMS[save.top].col,pants:
    FYSIK
    ========================================================= */
 function newRider(x,y,ang,st){
-  return {x,y,ang,vx:0,vy:0,z:ground(x,y),vz:0,air:false,airT:0,flipTo:null,baseAng:ang,spin:0,flip:0,flipT:0,tr:[],tricks:[],crashT:0,pitch:0,roll:0,wheel:0,st,onTakeoff:null,grind:null,wall:null,mantle:null,wallCool:0};
+  return {x,y,ang,vx:0,vy:0,z:ground(x,y),vz:0,air:false,airT:0,flipTo:null,baseAng:ang,spin:0,flip:0,flipT:0,tr:[],tricks:[],crashT:0,pitch:0,roll:0,wheel:0,st,onTakeoff:null,grind:null,wall:null,mantle:null,wallCool:0,spinT:0};
 }
 function takeoff(R,vz){if(R.slide)R.slide=null;R.rollT=0;R.air=true;R.vz=vz;R.airT=0;R.peak=R.z;R.baseAng=R.ang;R.spin=0;R.flip=0;R.flipTo=null;if(R.onTakeoff)R.onTakeoff(R);}
-function clean(R){return !R.tr.some(a=>!a.ground)&&R.flipT<=0&&Math.abs(wrap(R.flip))<0.6;}
+function clean(R){return !R.tr.some(a=>!a.ground)&&R.flipT<=0&&!(R.spinT>0)&&Math.abs(wrap(R.flip))<0.6;}
 function startMantle(R,nx,ny){
   if(R.air&&!clean(R))return false;
   const sp=Math.hypot(R.vx,R.vy);
@@ -458,6 +469,7 @@ function physics(R,steer,thr,dt){
   }
   R.airT+=dt;
   if(R.flipTo!==null)R.baseAng+=wrap(R.flipTo-R.baseAng)*Math.min(1,dt*4);
+  if(!R.npc&&Math.abs(steer)>0.15){const a=steer*1.8*dt,c=Math.cos(a),sn=Math.sin(a),vx=R.vx;R.baseAng+=a;R.vx=vx*c-R.vy*sn;R.vy=vx*sn+R.vy*c;}
   R.ang=R.baseAng+R.spin;
   if(tryWallRun(R))return false;
   // styr lite i luften
@@ -516,8 +528,8 @@ function bindBtn(id,fn){
   const off=()=>b.classList.remove('on');
   b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);
 }
-bindBtn('bJump',jump);[0,1,2,3].forEach(i=>bindBtn('t'+i,()=>trickBtn(i)));
-window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;if(e.repeat)return;if(e.key===' ')jump();const ti='jklu'.indexOf(k);if(ti>=0)trickBtn(ti);});
+bindBtn('bJump',jump);[0,1,2,3,4,5].forEach(i=>bindBtn('t'+i,()=>trickBtn(i)));
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;if(e.repeat)return;if(e.key===' ')jump();const ti='jkluio'.indexOf(k);if(ti>=0)trickBtn(ti);});
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 function readKeys(){
@@ -535,19 +547,22 @@ function jump(){
   if(P.grind){leaveGrind(330);return;}
   if(P.air)return;P.tr=[];takeoff(P,380*P.st.jump);
 }
-const slotTricks=()=>save.slots.filter(id=>save.own[id]&&ITEMS[id]).slice(0,4);
+const MAXSLOTS=6;
+const slotTricks=()=>save.slots.filter(id=>save.own[id]&&ITEMS[id]).slice(0,MAXSLOTS);
 function trickBtn(i){
   if(!canAct()||P.mantle||P.wall)return;
   const id=slotTricks()[i];if(!id)return;const d=ITEMS[id];
   if(d.act==='slide'){if(!P.grind)startSlide();return;}
+  if(d.act==='flip'){if(P.air&&!P.grind&&P.flipT<=0&&P.spinT<=0){P.flipDir=d.dir;P.flipStart=P.flip;P.flipT=FLIP_DUR;}return;}
+  if(d.act==='spin'){if(P.air&&!P.grind&&P.spinT<=0&&P.flipT<=0){const dir=js.x<-0.3?-1:1;P.spinFrom=P.spin;P.spinAmt=d.ang*dir;P.spinD=d.d;P.spinT=d.d;}return;}
   if(d.act==='roll'){if(P.air&&!P.grind){if(!P.rollArm){P.rollArm=true;}}else if(!P.grind)startRoll();return;}
   if(P.tr.some(a=>a.i===i))return;
   if(d.ground){if(P.air||P.grind)return;P.tr.push({i,k:d.k,d:d.d,t:d.d,ground:true});return;}
   if(!P.air||P.grind)return;
   P.tr.push({i,k:d.k,d:d.d,t:d.d,name:d.name,pts:d.pts});
 }
-P.onTakeoff=R=>{R.rollArm=false;R.tricks=[];R.tr=[];R.flipT=0;R.flipArm=Math.abs(js.y)<0.3;R.spinArm=Math.abs(js.x)<0.15;};
-function setButtons(){const ts=slotTricks();[0,1,2,3].forEach(i=>{const b=$('t'+i),id=ts[i];b.hidden=!id;if(id)b.textContent=ITEMS[id].name.toUpperCase();});}
+P.onTakeoff=R=>{R.rollArm=false;R.spinT=0;R.tricks=[];R.tr=[];R.flipT=0;R.flipArm=Math.abs(js.y)<0.3;R.spinArm=Math.abs(js.x)<0.15;};
+function setButtons(){const ts=slotTricks();[0,1,2,3,4,5].forEach(i=>{const b=$('t'+i),id=ts[i];b.hidden=!id;if(id)b.textContent=ITEMS[id].name.toUpperCase();});}
 
 /* ---------- glida på räcken ---------- */
 function tryGrind(){
@@ -556,7 +571,7 @@ function tryGrind(){
     const u=((P.x-r.x0)*r.dx+(P.y-r.y0)*r.dy)/(r.L*r.L);if(u<0.02||u>0.98)continue;
     const px=r.x0+r.dx*u,py=r.y0+r.dy*u;if(Math.hypot(P.x-px,P.y-py)>22)continue;
     const rz=r.z0+(r.z1-r.z0)*u;if(P.z-rz>24||P.z-rz<-16)continue;
-    if(P.flipT>0||Math.abs(wrap(P.flip))>0.6)continue;
+    if(P.flipT>0||P.spinT>0||Math.abs(wrap(P.flip))>0.6)continue;
     let s=(P.vx*r.dx+P.vy*r.dy)/r.L;if(Math.abs(s)<90)s=(s<0?-1:1)*90;
     P.grind={r,u,s,t:0};P.x=px;P.y=py;P.z=rz;P.vz=0;P.spin=0;P.flip=0;P.flipTo=null;
     P.ang=Math.atan2(r.dy*Math.sign(s),r.dx*Math.sign(s));P.baseAng=P.ang;return;
@@ -591,6 +606,8 @@ function trickWords(R){
 }
 function landPlayer(){
   if(P.flipT>0&&1-P.flipT/FLIP_DUR>0.8){P.flip=P.flipStart+P.flipDir*TAU;P.flipT=0;}
+  if(P.spinT>0&&1-P.spinT/P.spinD>0.8){P.spin=P.spinFrom+P.spinAmt;P.spinT=0;}
+  if(P.spinT>0){P.spinT=0;P.ang=landBase(P);crash();return;}
   for(const a of P.tr.slice()){if(!a.ground&&a.t<a.d*0.22){P.tricks.push({name:a.name,pts:a.pts});P.tr.splice(P.tr.indexOf(a),1);}}
   const rs=wrap(P.spin),rf=wrap(P.flip);
   const ok=Math.abs(rs)<0.8, back=Math.abs(rs)>Math.PI-0.8;
@@ -621,7 +638,7 @@ function award(list){
 }
 function crash(){
   startRagdoll(player);
-  P.crashT=CRASH_T;P.flipT=0;P.tr=[];P.tricks=[];P.spin=0;P.flip=0;P.baseAng=P.ang;P.grind=null;P.wall=null;P.mantle=null;P.slide=null;P.rollT=0;P.rollArm=false;P.hitHard=false;
+  P.crashT=CRASH_T;P.flipT=0;P.tr=[];P.tricks=[];P.spin=0;P.flip=0;P.baseAng=P.ang;P.grind=null;P.wall=null;P.mantle=null;P.slide=null;P.rollT=0;P.rollArm=false;P.spinT=0;P.hitHard=false;
   addPopup('Aj!','','#ff6a5a');
 }
 const pops=$('pops');
@@ -640,14 +657,16 @@ function updatePlayer(dt){
   if(P.air)P.tr=P.tr.filter(a=>!a.ground);
   const steer=Math.abs(js.x)>0.15?js.x:0,thr=-js.y;
   if(P.air&&!P.wall&&!P.mantle){
-    if(!steer)P.spinArm=true;if(Math.abs(thr)<0.3)P.flipArm=true;
-    if(steer&&P.spinArm)P.spin+=steer*SPIN_RATE*dt;
-    else{const tgt=Math.round(P.spin/Math.PI)*Math.PI;P.spin+=clamp(tgt-P.spin,-5*dt,5*dt);}
+    if(P.spinT>0){
+      P.spinT-=dt;const p=1-Math.max(P.spinT,0)/P.spinD;
+      P.spin=P.spinFrom+P.spinAmt*(p<1?p*p*(3-2*p):1);
+      if(P.spinT<=0){P.spinT=0;P.spin=P.spinFrom+P.spinAmt;}
+    }
     if(P.flipT>0){
       P.flipT-=dt;const p=1-Math.max(P.flipT,0)/FLIP_DUR;
       P.flip=P.flipStart+P.flipDir*TAU*(p<1?p*p*(3-2*p):1);
       if(P.flipT<=0){P.flipT=0;P.flip=P.flipStart+P.flipDir*TAU;}
-    }else if(P.flipArm&&Math.abs(thr)>0.5){P.flipDir=Math.sign(thr);P.flipStart=P.flip;P.flipT=FLIP_DUR;}
+    }
   }
   const landed=physics(P,steer,thr,dt);
   if(landed)landPlayer();else tryGrind();
@@ -1357,7 +1376,8 @@ function buildShop(){
     const d=document.createElement('div');d.className='card';
     const sw=it.col!==undefined?`<span class="sw" style="background:#${it.col.toString(16).padStart(6,'0')}"></span>`:'';
     let info='';
-    if(it.cat==='trick')info=it.ground?'<span>Görs på marken. Bara för skojs skull.</span>':`<span>${it.pts} poäng · ungefär ${Math.round(it.pts*2/12)} kr per landning</span>`;
+    if(it.act==='spin'){const half=Math.round(it.ang/Math.PI);info=`<span>Snurra ${half*180} grader i luften (dra joysticken åt vänster för att snurra åt andra hållet) · ${half*120} poäng</span>`;}
+    else if(it.cat==='trick')info=it.ground?'<span>Görs på marken. Bara för skojs skull.</span>':`<span>${it.pts} poäng · ungefär ${Math.round(it.pts*2/12)} kr per landning</span>`;
     if(it.cat==='shoe')info=`<span>${it.desc}</span><div class="bars"><span>Fart</span><div class="bar"><div style="width:${Math.round(it.maxs/435*100)}%"></div></div><span>Hopp</span><div class="bar"><div style="width:${Math.round((it.jump-0.8)/0.4*100)}%"></div></div></div>`;
     d.innerHTML=`<span class="ic">${catIcon(it.cat)}</span><b>${sw}${it.name}</b>${info}`;
     const btn=document.createElement('button');btn.type='button';btn.className='buy'+(owned?' owned':can?'':' cant');
@@ -1369,7 +1389,7 @@ function buy(id){
   const it=ITEMS[id];if(save.own[id])return;
   if(save.money<it.price){addPopup('För lite pengar',`Du behöver ${fmtKr(it.price-save.money)} till`,'#ff8a7a');return;}
   save.money-=it.price;save.own[id]=1;
-  if(it.cat==='trick'){if(save.slots.length<4)save.slots.push(id);}else save[it.cat]=id;
+  if(it.cat==='trick'){if(save.slots.length<MAXSLOTS)save.slots.push(id);}else save[it.cat]=id;
   persist();rebuildPlayer();updHud();buildShop();addPopup('Köpt!',it.name,'#ffd23a');
 }
 function openShop(){if(comp&&!comp.done)return;shopWasRunning=running;running=false;buildShop();$('shop').hidden=false;}
@@ -1385,8 +1405,8 @@ function buildInv(){
       b.onclick=()=>{onPick(id);rebuildPlayer();buildInv();};o.appendChild(b);}
     box.appendChild(r);
   };
-  row(`Trick på knapparna (${save.slots.length}/4) – tryck för att ta bort eller lägga till`,owned('trick'),k=>save.slots.includes(k),k=>{
-    const i=save.slots.indexOf(k);if(i>=0)save.slots.splice(i,1);else if(save.slots.length<4)save.slots.push(k);else addPopup('Max 4 trick','Ta bort ett först','#ff8a7a');});
+  row(`Trick på knapparna (${save.slots.length}/${MAXSLOTS}) – tryck för att ta bort eller lägga till`,owned('trick'),k=>save.slots.includes(k),k=>{
+    const i=save.slots.indexOf(k);if(i>=0)save.slots.splice(i,1);else if(save.slots.length<MAXSLOTS)save.slots.push(k);else addPopup('Max '+MAXSLOTS+' trick','Ta bort ett först','#ff8a7a');});
   row('Tröja',owned('top'),k=>save.top===k,k=>{save.top=k;});
   row('Byxor',owned('pants'),k=>save.pants===k,k=>{save.pants=k;});
   row('Skor',owned('shoe'),k=>save.shoe===k,k=>{save.shoe=k;});
@@ -1410,6 +1430,7 @@ function liveText(){
   const t=trickWords(P),parts=t.parts.slice();
   for(const a of P.tr)if(!a.ground)parts.push(a.name+'…');
   if(P.flipT>0)parts.push('flip…');
+  if(P.spinT>0)parts.push('snurr…');
   if(P.rollArm)parts.push('kullerbytta redo');
   return parts.join(' + ');
 }
