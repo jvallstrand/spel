@@ -173,7 +173,12 @@ button{font-family:inherit;color:inherit}
   .carepanel{width:min(300px,44vw)}.carebtns .btn em{font-size:20px}.carepanel h2{font-size:20px;padding:6px 12px 0}
   .stats.big{font-size:13px;gap:1px 6px;grid-template-columns:20px 1fr 28px}.stats.big .bar{height:9px}.stats.big em{font-size:11px}
   .carebtns .btn{font-size:13px;padding:5px 4px}.carebtns .btn small{display:none}
-  #quest{font-size:13px;max-width:40vw}
+  #quest{font-size:12px;max-width:36vw;padding:4px 10px;border-radius:12px}#quest b{display:none}
+  .hcard{min-width:128px;padding:3px 7px 5px;border-radius:14px}.hcard h4{font-size:13px;margin-bottom:2px}.hcard h4 small{font-size:10px}.stats{grid-template-columns:16px 1fr;font-size:11px;gap:0 4px}.bar{height:6px;border-width:1.5px}
+  .carepanel{width:min(390px,50vw)}.carebtns{grid-template-columns:1fr 1fr 1fr;gap:6px;padding:4px 8px 8px}.carebtns .btn{font-size:12px;border-radius:12px;box-shadow:0 3px 0 var(--ink)}
+  .stats.big{grid-template-columns:20px 1fr}.stats.big em{display:none}.carefoot{padding:4px 8px 8px}.carefoot .btn{font-size:18px;padding:6px}
+  #careHint{font-size:14px;padding:5px 10px}
+  .pill{padding:2px 9px 2px 6px}.hudR{gap:8px}
 }
 @media (orientation:portrait){
   .cpanel{left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);top:auto;width:auto;height:56%}
@@ -260,7 +265,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.3';
+const APP_VERSION='0.4';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -406,7 +411,8 @@ const Snd={ctx:null,master:null,nb:null,muted:false,wave:null,
 // ================= VÄRLDEN =================
 const canvas=$('#c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+const PHONE=Math.min(screen.width,screen.height)<520;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,PHONE?1.5:1.75));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
 const FOG=new THREE.Color('#dcefff');
@@ -510,7 +516,7 @@ const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:
   fragmentShader:'uniform vec3 top,mid,bot,sun;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;vec3 c=mix(bot,mid,smoothstep(-.02,.2,h));c=mix(c,top,smoothstep(.2,.75,h));float s=max(dot(d,sun),0.);c+=vec3(1.,.92,.75)*(pow(s,900.)*1.5+pow(s,14.)*.22);gl_FragColor=vec4(c,1.);}'});
 const sky=new THREE.Mesh(new THREE.SphereGeometry(900,32,16),skyMat);sky.renderOrder=-1;scene.add(sky);
 const hemi=new THREE.HemisphereLight(0xe2f3ff,0x7aa860,.52);scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xfff0d8,.78);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+const sun=new THREE.DirectionalLight(0xfff0d8,.78);sun.castShadow=true;sun.shadow.mapSize.set(PHONE?1024:2048,PHONE?1024:2048);
 Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:160});sun.shadow.bias=-.0006;sun.shadow.normalBias=.03;
 scene.add(sun);scene.add(sun.target);
 function sunFollow(p){sun.target.position.set(Math.round(p.x),0,Math.round(p.z));sun.position.copy(sun.target.position).addScaledVector(SUN_DIR,80);}
@@ -616,7 +622,7 @@ function isFree(x,z,pad=0){// fri från vägar, banor, byggnader
     P.push(bx-lx,0,bz-lz, bx+lx,0,bz+lz, bx*1.8+rng()*.05,h,bz*1.8+rng()*.05);C.push(.3,.6,.22, .3,.6,.22, .66,.9,.42);N2.push(0,1,0,0,1,0,0,1,0)}
   blade.setAttribute('position',new THREE.Float32BufferAttribute(P,3));blade.setAttribute('color',new THREE.Float32BufferAttribute(C,3));blade.setAttribute('normal',new THREE.Float32BufferAttribute(N2,3));
   const gm=swayMat(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
-  const N=6500,im=new THREE.InstancedMesh(blade,gm,N);let k=0;const col=new THREE.Color();
+  const N=PHONE?3800:6500,im=new THREE.InstancedMesh(blade,gm,N);let k=0;const col=new THREE.Color();
   for(let n=0;n<40000&&k<N;n++){const near=n<30000;const x=near?-60+rng()*150:-224+rng()*306,z=near?-62+rng()*124:-86+rng()*172;
     if(x>86)continue;if(!isFree(x,z,-1.2))continue;if(x>82&&rng()<.6)continue;
     const s=.8+rng()*.8,y=groundH(x,z);im.setMatrixAt(k,M4(x,y,z,s,s*(x>80?1.8:1),s,rng()*6.3));
@@ -624,7 +630,7 @@ function isFree(x,z,pad=0){// fri från vägar, banor, byggnader
   im.count=k;im.receiveShadow=true;im.instanceMatrix.needsUpdate=true;scene.add(im);
   // blommor
   const fg=mergeGeos([{geo:new THREE.CylinderGeometry(.012,.012,.28,4),m:M4(0,.14,0),color:'#3f8a37'},{geo:new THREE.IcosahedronGeometry(.07,0),m:M4(0,.3,0,1,.6,1)},{geo:new THREE.SphereGeometry(.03,6,4),m:M4(0,.33,0),color:'#fff3a0'}]);
-  const fm=new THREE.MeshLambertMaterial({vertexColors:true});const FN=1100,fi=new THREE.InstancedMesh(fg,fm,FN);let f=0;
+  const fm=new THREE.MeshLambertMaterial({vertexColors:true});const FN=PHONE?650:1100,fi=new THREE.InstancedMesh(fg,fm,FN);let f=0;
   const FC=['#ff6fae','#ffd23f','#ffffff','#b48cff','#ff8a5c','#7fd0ff'];
   for(let n=0;n<20000&&f<FN;n++){const x=-55+rng()*140,z=-58+rng()*116;if(x>84||!isFree(x,z,-.5))continue;
     const cl=fbm(x*.08+3,z*.08);if(cl<.5&&rng()>.15)continue;
