@@ -118,6 +118,7 @@ body.editing .hud,body.editing .act,body.editing #stickBase,body.editing #stickZ
 <div class="hud">
   <div class="score"><span id="sc">0</span><small>Rekord trick: <span id="best">0</span></small></div>
   <div class="topbtns">
+    <a class="tb" href="../" aria-label="Till Spelhallen" style="text-decoration:none">🏠</a>
     <button class="tb" id="bVeh" aria-label="Byt fordon">🛴</button>
     <button class="tb" id="bMap" aria-label="Karta">🗺️</button>
     <button class="tb" id="bSeason" aria-label="Byt årstid">❄️</button>
@@ -191,7 +192,7 @@ body.editing .hud,body.editing .act,body.editing #stickBase,body.editing #stickZ
 <script>
 (function(){
 'use strict';
-const APP_VERSION='0.9.1';
+const APP_VERSION='0.9.2';
 const LS_BEST='kick:best',LS_LOOK='kick:look',LS_COMP='kick:comp:',LS_SEASON='kick:season';
 
 document.querySelectorAll('.appver').forEach(el=>el.textContent=APP_VERSION);
