@@ -265,7 +265,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.4';
+const APP_VERSION='0.5';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1479,7 +1479,7 @@ Snd.bark=function(){this.tone(520,.09,{type:'square',gain:.07,fEnd:330});this.no
 const DOG={pos:new V3(-8,0,-2),yaw:0,speed:0,mode:'roam',t:0,tx:-8,tz:-2,barkT:3,wagT:0,sitT:0,stick:null,sniff:false};
 function dogInit(){DOG.m=makeDog();scene.add(DOG.m.g);DOG.pos.set(-9,0,-3);
   const st=new THREE.Mesh(cylG(.025,.025,.5,6),mat('#8a5a32'));st.castShadow=true;st.visible=false;scene.add(st);DOG.stickM=st}
-function dogName(){return S.dogName||'Sixten'}
+function dogName(){return S.dogName||'Brixton'}
 function dogOwnerPos(){return G.ride>=0?G.horses[G.ride].pos:player.pos}
 function updateDog(dt){const D=DOG;if(!D.m)return;D.t-=dt;D.barkT-=dt;D.wagT-=dt;let sit=false,bark=false;
   const vis=G.mode!=='comp'&&!(G.mode==='cut');D.m.g.visible=vis;if(!vis)return;
