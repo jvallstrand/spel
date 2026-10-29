@@ -94,7 +94,7 @@ button{font-family:inherit;color:inherit}
 #quest.done{animation:qpop .7s}
 @keyframes qpop{30%{transform:translateX(-50%) scale(1.15) rotate(-3deg);background:var(--mint)}}
 #joyzone{position:absolute;left:0;bottom:0;width:48%;height:62%;touch-action:none}
-#joy{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:rgba(255,255,255,.28);border:3px solid rgba(255,255,255,.85);pointer-events:none;opacity:.55;transition:opacity .2s}
+#joy{position:absolute;width:140px;height:140px;margin:-70px 0 0 -70px;border-radius:50%;background:rgba(255,255,255,.3);border:3px solid rgba(255,255,255,.9);pointer-events:none;opacity:.7;transition:opacity .2s}
 #joy.on{opacity:1}
 #joy i{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink)}
 #acts{position:absolute;right:calc(var(--sr) + 16px);bottom:calc(var(--sb) + 18px);display:flex;flex-direction:column;gap:12px;align-items:flex-end}
@@ -260,7 +260,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.1';
+const APP_VERSION='0.2';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -317,7 +317,7 @@ const HNAMES=['Stjärna','Kanelbulle','Diva','Blixten','Molly','Prinsessan','Tur
 const coatOf=id=>COATS.find(c=>c.id===id)||COATS[0];
 
 function newHorseData(name){return {name:name||pick(HNAMES),coat:pick(['fux','brun','palomino','skimmel','svart']),mane:'auto',pattern:'none',face:pick(['star','blaze','none']),socks:pick(['none','front','all']),pad:pick(PADS),
-  acc:{glasses:false,crown:false,bows:false,glitter:false},st:{hunger:72,thirst:65,clean:45,mood:70,energy:90},dirt:3,xp:0,loc:'box'}}
+  ready:{},acc:{glasses:false,crown:false,bows:false,glitter:false},st:{hunger:72,thirst:65,clean:45,mood:70,energy:90},dirt:3,xp:0,loc:'box'}}
 function defaultSave(){return {v:1,created:false,money:150,shoes:[],sup:{hay:6,feed:3,shav:2,carrot:5,apple:2},owned:{},carColor:'#ff4f9a',
   rider:{name:'',skin:1,hair:2,style:'tofs',shirt:'#ff4f9a',pants:'#ffffff',helmet:'#8a5cff'},
   horses:[newHorseData()],quest:0,rq:null,stat:{clean:0,jumps:0,wins:0,comps:0},ribbons:[],unlock:1,muted:false,t:Date.now()}}
@@ -725,7 +725,7 @@ const STABLE={};
     const feed=addMesh(new THREE.CylinderGeometry(.26,.2,.24,14),mat('#ff86bd'),bx-1.9,.12,-18.15);feed.visible=false;STABLE.feed.push(feed);
     addMesh(new THREE.CylinderGeometry(.24,.2,.36,14,1,true),mat('#3fa8ff',{side:THREE.DoubleSide}),bx-2.05,1.05,-19.3);
     const wtr=addMesh(new THREE.CircleGeometry(.22,14),mat('#7fe0ff',{roughness:.2}),bx-2.05,.9,-19.3);wtr.rotation.x=-Math.PI/2;STABLE.water.push(wtr);
-    const piles=[];for(let k=0;k<6;k++){const pm=addMesh(pileG,manM,bx-1.9+(k%3)*1.5+rng()*.5,.02,-13.6-Math.floor(k/3)*1.1-rng()*.3);pm.rotation.y=rng()*6;pm.visible=false;piles.push(pm)}STABLE.manure.push(piles);
+    const piles=[];for(let k=0;k<6;k++){const pm=addMesh(pileG,manM,bx-1.9+(k%3)*1.5+rng()*.5,.02,-14.9-Math.floor(k/3)*.8-rng()*.2);pm.rotation.y=rng()*6;pm.visible=false;piles.push(pm)}STABLE.manure.push(piles);
     const pl=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.38),new THREE.MeshBasicMaterial({map:textTex('',{w:256,h:64,size:40,border:'#2b1745'})}));pl.position.set(bx,2.75,z1+.03);scene.add(pl);STABLE.plates.push(pl);
     // blomlåda
     box(.9,.3,.3,mat('#fbf8f2'),bx+1.35,.15,z1+.3);for(let k=0;k<4;k++)addMesh(new THREE.SphereGeometry(.09,6,5),mat(pick(['#ff6fae','#ffd23f','#ffffff','#b48cff'])),bx+1.0+k*.24,.36,z1+.3);
@@ -760,9 +760,10 @@ function setStableSign(name){const t=name?(name.toUpperCase()+(/[sxz]$/i.test(na
 fence(L.hage,[{side:'x0',a:-25.5,b:-20.5}],'brown');
 fence(L.arena,[{side:'z0',a:L.arenaGap[0],b:L.arenaGap[1]}],'white');
 fence(L.varena,[{side:'x1',a:-3.5,b:3.5}],'white');
+const HAGE={open:false,seg:[10,-25.5,10,-20.5]};
 (function hageProps(){box(2.4,.5,.8,mat('#8f96a3'),16,.25,-33.5);const w=addMesh(new THREE.PlaneGeometry(2.2,.6),mat('#7fe0ff',{roughness:.2}),16,.46,-33.5);w.rotation.x=-Math.PI/2;COL.rects.push([14.8,17.2,-33.9,-33.1]);
-  const gm=mat('#8b5e3a');const g1=new THREE.Group();g1.position.set(10,0,-25.5);scene.add(g1);for(const y of[.5,.9,1.3])box(.08,.1,2.4,gm,0,y,1.2,g1);box(.08,1.3,.1,gm,0,.7,2.3,g1);g1.rotation.y=-1.2;
-  const g2=new THREE.Group();g2.position.set(10,0,-20.5);scene.add(g2);for(const y of[.5,.9,1.3])box(.08,.1,2.4,gm,0,y,-1.2,g2);box(.08,1.3,.1,gm,0,.7,-2.3,g2);g2.rotation.y=1.2;
+  const gm=mat('#8b5e3a');const g1=new THREE.Group();g1.position.set(10,0,-25.5);scene.add(g1);for(const y of[.5,.9,1.3])box(.08,.1,2.4,gm,0,y,1.2,g1);box(.08,1.3,.1,gm,0,.7,2.3,g1);g1.rotation.y=0;HAGE.g1=g1;
+  const g2=new THREE.Group();g2.position.set(10,0,-20.5);scene.add(g2);for(const y of[.5,.9,1.3])box(.08,.1,2.4,gm,0,y,-1.2,g2);box(.08,1.3,.1,gm,0,.7,-2.3,g2);g2.rotation.y=0;HAGE.g2=g2;
   const s=new THREE.Mesh(signGeo(1.8,.5),new THREE.MeshBasicMaterial({map:textTex('HAGEN',{w:256,h:72,size:50,bg:'#fff8ef',border:'#2b1745'})}));s.position.set(9.7,1.7,-26.3);s.rotation.y=-Math.PI/2;scene.add(s);
   box(.12,1.6,.12,gm,9.7,.8,-26.3);
 })();
@@ -1174,13 +1175,13 @@ function initWorld(){
   G.arrow=new THREE.Mesh(arrG,new THREE.MeshBasicMaterial({color:'#ffcf33',transparent:true,opacity:.9,depthWrite:false}));G.arrow.visible=false;scene.add(G.arrow);
   G.ring=new THREE.Mesh(new THREE.TorusGeometry(1.1,.12,8,28),new THREE.MeshBasicMaterial({color:'#ffcf33'}));G.ring.visible=false;scene.add(G.ring);
   G.careLight=new THREE.PointLight(0xfff0d0,0,9,1.5);scene.add(G.careLight);
-  rebuildHorses();SHOES.sync();setStableSign(S.rider.name);
+  rebuildHorses();SHOES.sync();setStableSign(S.rider.name);setGate(false,true);
 }
 function rebuildHorses(){G.horses.forEach(h=>scene.remove(h.m.g));G.horses=S.horses.map((d,i)=>spawnHorse(d,i));L.boxes.forEach((b,i)=>setPlate(i,S.horses[i]?S.horses[i].name:''));}
 function spawnHorse(d,i){const m=makeHorse(d);scene.add(m.g);
   const h={d,m,i,pos:new V3(),yaw:0,speed:0,state:d.loc==='hage'?'hage':'box',jumpT:-1,jumpDur:.8,jumpApex:0,jumpY:0,prev:new Map(),w:{mode:'graze',t:rand(2,6),x:0,z:0,sp:0},sayT:rand(6,16),
     eatT:0,lift:-1,liftT:0,happyT:0,buckT:0,dirtT:0,galT:0,beatT:0,look:0};
-  placeHorse(h);m.setDirt(dirtCount(h));return h}
+  placeHorse(h);m.setDirt(dirtCount(h));if(STABLE.hay[i])STABLE.hay[i].visible=!!(d.ready&&d.ready.hay);return h}
 function placeHorse(h){if(h.state==='box'){h.pos.set(L.boxes[h.i],0,-13.35);h.yaw=0;h.m.setTack(false)}
   else if(h.state==='hage'){h.pos.set(rand(15,38),0,rand(-33,-14));h.yaw=rand(-3,3);h.w.mode='graze';h.w.t=rand(1,5)}
   h.pos.y=groundH(h.pos.x,h.pos.z)}
@@ -1276,18 +1277,32 @@ function checkJumps(h){for(const J of activeJumps()){const dx=h.pos.x-J.x,dz=h.p
     if(!G.comp&&Math.random()<.35)say(h,'clean',true);if(!G.comp)toast(pick(['Snyggt! ✨','Wow! 🌟','Perfekt!','Proffs! 😎']));quest('jump');quest('jump3');h.d.st.mood=Math.min(100,h.d.st.mood+3)}
   else{J.knock(s>prev?1:-1);Snd.knock();G.streak=0;toast('Rivning! 🙈');if(Math.random()<.5)say(h,'knock',true);if(!G.comp)setTimeout(()=>J.reset(),3500)}}}
 
+// ---------- grinden ----------
+function setGate(open,quiet){HAGE.open=open;COL.segs=COL.segs.filter(s=>s!==HAGE.seg);if(!open)COL.segs.push(HAGE.seg);if(!quiet){Snd.knock();note(open?'Grinden är öppen 🔓':'Grinden är stängd 🔒 – hästarna stannar i hagen.')}}
+function updateGate(dt){if(!HAGE.g1)return;HAGE.g1.rotation.y=damp(HAGE.g1.rotation.y,HAGE.open?-1.25:0,5,dt);HAGE.g2.rotation.y=damp(HAGE.g2.rotation.y,HAGE.open?1.25:0,5,dt)}
+// ---------- lös häst ----------
+function updateLoose(h,dt){const w=h.w;w.t-=dt;let graze=false;
+  if(w.mode==='graze'){h.speed=damp(h.speed,0,4,dt);graze=w.t>.5;if(w.t<=0){w.mode='walk';w.sp=Math.random()<.25?4.5:1.6;w.x=rand(-6,7);w.z=rand(-14,8)}}
+  else{const dx=w.x-h.pos.x,dz=w.z-h.pos.z,d=Math.hypot(dx,dz);h.speed=damp(h.speed,d>1?w.sp:0,2,dt);h.yaw=dampA(h.yaw,Math.atan2(dx,dz),2.5,dt);if(d<1.3){w.mode='graze';w.t=rand(4,9)}}
+  h.pos.x+=Math.sin(h.yaw)*h.speed*dt;h.pos.z+=Math.cos(h.yaw)*h.speed*dt;collide(h.pos,.6);h.pos.y=groundH(h.pos.x,h.pos.z);return {graze}}
+function catchLoose(h){if(G.lead>=0)return;h.state='lead';G.lead=h.i;h.w.mode='graze';say(h,['Okej, okej. Jag kommer.','Det var kul så länge det varade.'],true);Snd.snort()}
+
 // ---------- hagen ----------
 const HG_IN=[11.4,40.6,-34.6,-11.4];
 function updateHage(h,dt){const w=h.w,st=h.d.st;w.t-=dt;let graze=false,buck=0;
+  // öppen grind och ingen i närheten: hästen kan smita
+  const pd=Math.hypot(player.pos.x-10,player.pos.z+23);
+  if(HAGE.open&&w.mode!=='toGate'&&w.mode!=='escape'&&pd>6&&G.mode==='play'){h.escT=(h.escT||0)+dt;if(h.escT>25){w.mode='escape';w.x=8;w.z=-23;w.sp=4;h.escT=0;Snd.neigh()}}else h.escT=0;
   if(w.mode==='graze'){h.speed=damp(h.speed,0,4,dt);graze=w.t>.6;if(w.t<=0){const r=Math.random();
       w.mode=r<.18?'zoom':'walk';w.sp=w.mode==='zoom'?rand(5,7.5):rand(1.2,1.8);w.x=rand(HG_IN[0]+1,HG_IN[1]-1);w.z=rand(HG_IN[2]+1,HG_IN[3]-1);
       if(w.mode==='zoom'){h.buckT=.8;if(Math.random()<.5)Snd.neigh()}}}
   else{const dx=w.x-h.pos.x,dz=w.z-h.pos.z,d=Math.hypot(dx,dz);
     h.speed=damp(h.speed,d>1?w.sp:0,2,dt);h.yaw=dampA(h.yaw,Math.atan2(dx,dz),2.5,dt);
-    if(d<1.2){if(w.mode==='toGate'){h.state='lead';G.lead=h.i;w.mode='graze';say(h,'lead',true);note(h.d.name+' följer med dig nu.')}
+    if(w.mode==='escape'&&d<1.4){h.state='loose';w.mode='graze';w.t=1;say(h,['Frihet! Hej då! 🏃‍♀️','Grinden var öppen. Inte mitt fel.'],true);note(h.d.name+' rymde ur hagen! Gå fram och fånga henne.')}
+    else if(d<1.2){if(w.mode==='toGate'){h.state='lead';G.lead=h.i;w.mode='graze';say(h,'lead',true);note(h.d.name+' följer med dig nu.')}
       else{w.mode='graze';w.t=rand(5,12)}}}
   h.pos.x+=Math.sin(h.yaw)*h.speed*dt;h.pos.z+=Math.cos(h.yaw)*h.speed*dt;
-  if(w.mode!=='toGate'){h.pos.x=clamp(h.pos.x,HG_IN[0],HG_IN[1]);h.pos.z=clamp(h.pos.z,HG_IN[2],HG_IN[3])}
+  if(w.mode!=='toGate'&&w.mode!=='escape'){h.pos.x=clamp(h.pos.x,HG_IN[0],HG_IN[1]);h.pos.z=clamp(h.pos.z,HG_IN[2],HG_IN[3])}
   const tx=h.pos.x-34,tz=h.pos.z+16,td=Math.hypot(tx,tz);if(td<1.8){h.pos.x=34+tx/td*1.8;h.pos.z=-16+tz/td*1.8}
   h.pos.y=groundH(h.pos.x,h.pos.z);if(h.buckT>0){h.buckT-=dt;buck=Math.max(0,Math.sin(h.buckT*12))*clamp(h.buckT,0,1)}
   return {graze,buck}}
@@ -1297,6 +1312,7 @@ function updateHorses(dt){G.horses.forEach(h=>{let o={speed:h.speed};
   if(h.state==='box'){h.speed=0;if(h.careMode){o.graze=h.eatT>0;o.lift=h.liftT>0?h.lift:-1;o.look=h.look;o.happy=h.happyT>0}else{o.graze=false;o.look=Math.sin(G.t*.3+h.i)*.25}
     if(h.eatT>0){h.eatT-=dt;if(Math.random()<dt*1.5)Snd.munch();if(h.eatT<=0){STABLE.hay[h.i].visible=false;STABLE.feed[h.i].visible=false}}}
   else if(h.state==='hage'){const r=updateHage(h,dt);o.graze=r.graze;o.buck=r.buck;o.speed=h.speed}
+  else if(h.state==='loose'){const r=updateLoose(h,dt);o.graze=r.graze;o.speed=h.speed}
   else if(h.state==='ride'){o.jump=h.jumpT>=0?h.jumpT/h.jumpDur:-1;o.speed=h.speed}
   else if(h.state==='lead'){o.speed=h.speed}
   else if(h.state==='trailer'||h.state==='hidden'){h.m.g.visible=false;return}
@@ -1312,10 +1328,13 @@ function updateHorses(dt){G.horses.forEach(h=>{let o={speed:h.speed};
 function boxOf(h){return L.boxes[h.i]}
 function openDoor(i,open){const d=STABLE.doors[i];if(!d)return;d.userData.open=open}
 function takeOut(h){if(G.lead>=0)return;h.state='lead';G.lead=h.i;h.pos.set(boxOf(h)+.6,0,-10.4);h.yaw=Math.PI*.2;h.speed=0;openDoor(h.i,true);setTimeout(()=>openDoor(h.i,false),1500);say(h,'lead',true);Snd.neigh()}
-function putIn(h){h.state='box';G.lead=-1;placeHorse(h);openDoor(h.i,true);setTimeout(()=>openDoor(h.i,false),1200);say(h,'box',true);saveGame()}
-function releaseHage(){const h=G.horses[G.lead];if(!h)return;G.lead=-1;h.state='hage';h.m.setTack(false);h.pos.set(12,0,-23);h.yaw=Math.PI/2;
-  h.w.mode='zoom';h.w.sp=6;h.w.x=rand(24,36);h.w.z=rand(-30,-15);h.buckT=1;Snd.neigh();say(h,'hage',true);quest('hage');h.saidBeach=0;saveGame()}
-function fetchHage(h){h.w.mode='toGate';h.w.x=12;h.w.z=-23;h.w.sp=3.5;note(h.d.name+' kommer travande!');Snd.neigh()}
+function putIn(h){h.state='box';G.lead=-1;placeHorse(h);serveReady(h);openDoor(h.i,true);setTimeout(()=>openDoor(h.i,false),1200);say(h,'box',true);saveGame()}
+function serveReady(h){const r=h.d.ready||{};if(!r.hay&&!r.water)return;const st=h.d.st;
+  if(r.hay){st.hunger=Math.min(100,st.hunger+35);h.eatT=7;quest('hay')}if(r.water){st.thirst=100;quest('water')}
+  h.d.ready={};setTimeout(()=>say(h,r.hay&&r.water?['Hö OCH vatten? Du är bäst! 💖','Wow, framdukat!']:['Mmm, framdukat! 💖'],true),400)}
+function releaseHage(){const h=G.horses[G.lead];if(!h)return;if(!HAGE.open)setGate(true,true);G.lead=-1;h.state='hage';h.m.setTack(false);h.pos.set(12,0,-23);h.yaw=Math.PI/2;
+  h.w.mode='zoom';h.w.sp=6;h.w.x=rand(24,36);h.w.z=rand(-30,-15);h.buckT=1;Snd.neigh();say(h,'hage',true);quest('hage');h.saidBeach=0;setTimeout(()=>{if(HAGE.open)note('Stäng grinden så hon inte rymmer! 🔒')},1500);saveGame()}
+function fetchHage(h){if(!HAGE.open)setGate(true,true);h.w.mode='toGate';h.w.x=12;h.w.z=-23;h.w.sp=3.5;note(h.d.name+' kommer travande!');Snd.neigh()}
 function mount(){const h=G.horses[G.lead];if(!h)return;G.ride=h.i;G.lead=-1;h.state='ride';h.m.setTack(true);player.model.setHelmet(true);
   h.m.body.add(player.model.g);player.model.g.position.set(0,.52-.66,.02);player.model.g.rotation.set(0,0,0);
   G.gallop=false;G.cam.yaw=h.yaw;quest('ride');h.galT=0;h.wetT=0;Snd.snort();setRideUI(true)}
@@ -1341,7 +1360,7 @@ function updateCamera(dt){const c=G.cam;
   if(G.mode==='title'){const a=G.t*.06;c.focus.set(-2,1.5,-12);camera.position.set(-2+Math.sin(a)*30,11+Math.sin(G.t*.13)*2,-12+Math.cos(a)*30);camera.lookAt(c.focus);sunFollow(c.focus);return}
   if(G.mode==='creator'){const s=G.stage;const v=G.creatorStep==='rider'?{d:3.1,h:1.0,l:.75}:{d:5.6,h:1.6,l:1.1};
     camera.position.set(s.x+v.d*.25,v.h+.4,s.z+v.d);camera.lookAt(s.x,v.l,s.z);c.focus.set(s.x,1,s.z);sunFollow(c.focus);return}
-  if(G.mode==='care'){const h=G.care,bx=boxOf(h);const cf=innerHeight>innerWidth?76:60;if(camera.fov!==cf){camera.fov=cf;camera.updateProjectionMatrix()}camera.position.set(bx+.2,2.45,-12.45);camera.lookAt(bx-.25,.82,-17.05);c.focus.set(bx,1,-16.5);sunFollow(c.focus);return}
+  if(G.mode==='care'){const h=G.care,bx=boxOf(h);const cf=innerHeight>innerWidth?76:60;if(camera.fov!==cf){camera.fov=cf;camera.updateProjectionMatrix()}camera.position.set(bx+.2,2.45,-12.45);if(G.careEmpty)camera.lookAt(bx-.3,.25,-16.2);else camera.lookAt(bx-.25,.82,-17.05);c.focus.set(bx,1,-16.5);sunFollow(c.focus);return}
   if(G.mode==='cut'){sunFollow(G.car.g.position);return}
   if(camera.fov>58&&G.mode!=='play'&&G.mode!=='comp'&&G.mode!=='care'){camera.fov=55;camera.updateProjectionMatrix()}
   const riding=G.ride>=0,ent=riding?G.horses[G.ride]:null;
@@ -1448,7 +1467,7 @@ const STATDEF=[['hunger','🌾','Mat'],['thirst','💧','Vatten'],['clean','✨'
 const barCol=v=>v>60?'#2fd6a6':v>30?'#ffcf33':'#ff5a4f';
 function renderStats(el,st,big){if(!el._b){el.innerHTML=STATDEF.map(s=>`<span title="${s[2]}">${s[1]}</span><div class="bar"><b></b></div>${big?'<em></em>':''}`).join('');el._b=[...el.querySelectorAll('.bar b')];el._e=[...el.querySelectorAll('em')]}
   STATDEF.forEach((s,i)=>{const v=st[s[0]];el._b[i].style.width=v+'%';el._b[i].style.background=barCol(v);if(big)el._e[i].textContent=Math.round(v)})}
-const WHERE={box:'i boxen',hage:'i hagen',lead:'leds',ride:'rids',trailer:'i släpet'};
+const WHERE={box:'i boxen',hage:'i hagen',lead:'leds',ride:'rids',trailer:'i släpet',loose:'har rymt!'};
 function hudHorse(){if(G.ride>=0)return G.horses[G.ride];if(G.lead>=0)return G.horses[G.lead];let best=null,bd=1e9;G.horses.forEach(h=>{const d=h.pos.distanceTo(player.pos);if(d<bd){bd=d;best=h}});return best}
 function updateHudSlow(){$('#coins').textContent=S.money;$('#shoes').textContent=S.shoes.length;const h=hudHorse();if(!h)return;
   $('#hName').textContent=h.d.name;$('#hWhere').textContent=WHERE[h.state]||'';renderStats($('#hStats'),h.d.st,false);
@@ -1459,9 +1478,12 @@ let ACTS=[];
 function interactions(){const out=[],p=player.pos,near=(x,z,r)=>Math.hypot(p.x-x,p.z-z)<r;
   L.boxes.forEach((bx,i)=>{if(!near(bx,-10.7,2.3))return;const h=G.horses.find(h=>h.i===i);if(!h)return;
     if(h.state==='box'){out.push({label:'💖 Sköt om '+h.d.name,fn:()=>enterCare(h)});if(G.lead<0)out.push({label:'🐴 Ta ut '+h.d.name,fn:()=>takeOut(h)})}
-    else if(G.lead===h.i)out.push({label:'🏠 Ställ in '+h.d.name,fn:()=>putIn(h)})});
+    else if(G.lead===h.i)out.push({label:'🏠 Ställ in '+h.d.name,fn:()=>putIn(h)});
+    else if(h.state!=='ride')out.push({label:'🧹 Städa boxen',fn:()=>enterCare(h,true)})});
   if(near(L.shop.x,L.shop.z+2.7,2.8))out.push({label:'🛒 Butiken',fn:openShop});
-  if(near(8.2,-23,3.2)){if(G.lead>=0)out.push({label:'🌼 Släpp i hagen',fn:releaseHage});else G.horses.filter(h=>h.state==='hage'&&h.w.mode!=='toGate').forEach(h=>out.push({label:'🐴 Hämta '+h.d.name,fn:()=>fetchHage(h)}))}
+  if(near(8.2,-23,3.2)||near(11.8,-23,2.6)){if(G.lead>=0)out.push({label:'🌼 Släpp i hagen',fn:releaseHage});else G.horses.filter(h=>h.state==='hage'&&h.w.mode!=='toGate').forEach(h=>out.push({label:'🐴 Hämta '+h.d.name,fn:()=>fetchHage(h)}));
+    out.splice(G.lead>=0?1:out.length,0,{label:HAGE.open?'🔒 Stäng grinden':'🔓 Öppna grinden',fn:()=>setGate(!HAGE.open)})}
+  if(G.lead<0)G.horses.forEach(h=>{if(h.state==='loose'&&near(h.pos.x,h.pos.z,2.8))out.unshift({label:'🐴 Fånga '+h.d.name,fn:()=>catchLoose(h)})});
   if(near(-23.4,6,3.4)){if(G.lead>=0)out.push({label:'🚗 Åk på tävling',fn:openComp});else out.push({label:'🚗 Hämta en häst först',fn:()=>note('Ta ut en häst ur boxen eller hagen och led hit den.')})}
   if(G.lead>=0)out.push({label:'🏇 Sitt upp',fn:mount});
   return out}
@@ -1537,15 +1559,16 @@ function resetGame(){lsSet('');try{localStorage.removeItem(SAVE_KEY)}catch(e){}l
 
 // ---------- skötsel ----------
 const CARE={markers:[]};
-function enterCare(h){G.mode='care';G.care=h;G.sub=null;h.careMode=true;h.pos.set(boxOf(h)-.1,0,-17.05);h.yaw=-Math.PI/2;h.m.setTack(false);h.look=0;h.speed=0;
-  showHud(false);$('#care').hidden=false;$('#careName').textContent='💖 '+h.d.name;renderCare();
+function enterCare(h,empty){G.mode='care';G.care=h;G.sub=null;G.careEmpty=!!empty;if(!empty){h.careMode=true;h.pos.set(boxOf(h)-.1,0,-17.05);h.yaw=-Math.PI/2;h.m.setTack(false);h.look=0;h.speed=0}
+  showHud(false);$('#care').hidden=false;$('#careName').textContent=empty?'🧹 '+h.d.name+'s box':'💖 '+h.d.name;renderCare();
   G.careLight.position.set(boxOf(h)+.6,2.7,-14.8);G.careLight.intensity=1.15;openDoor(h.i,true);player.model.g.visible=false;
   updateManure(h);setTimeout(()=>frameMode('right'),20);updateHudSlow()}
-function exitCare(){const h=G.care;if(!h)return;endSub(true);h.careMode=false;placeHorse(h);G.careLight.intensity=0;openDoor(h.i,false);player.model.g.visible=true;
+function exitCare(){const h=G.care;if(!h)return;endSub(true);if(!G.careEmpty){h.careMode=false;placeHorse(h)}G.careEmpty=false;G.careLight.intensity=0;openDoor(h.i,false);player.model.g.visible=true;
   $('#care').hidden=true;frameMode(null);G.care=null;G.mode='play';showHud(true);renderQuest();saveGame()}
 $('#careDone').addEventListener('click',()=>{Snd.click();if(G.sub){endSub();return}exitCare()});
 function updateManure(h){STABLE.manure[h.i].forEach((m,k)=>m.visible=k<h.d.dirt);const f=STABLE.floors[h.i];f.material.color.set('#ffffff').lerp(new THREE.Color('#b0915e'),h.d.dirt/7)}
-function careBtns(){const s=S.sup,h=G.care;return [['hay','🌾','Ge hö',s.hay+' kvar'],['water','💧','Vatten','Gratis'],['feed','🥣','Kraftfoder',s.feed+' kvar'],['brush','🧽','Borsta','Gnugga bort smuts'],
+function careBtns(){const s=S.sup,h=G.care,r=h.d.ready||{};if(G.careEmpty)return [['muck','💩','Mocka',h.d.dirt+' högar'],['prephay','🌾',r.hay?'Hö ligger i':'Lägg i hö',s.hay+' kvar'],['prepwater','💧',r.water?'Vattnet är fyllt':'Fyll vattnet','Gratis']];
+  return [['hay','🌾','Ge hö',s.hay+' kvar'],['water','💧','Vatten','Gratis'],['feed','🥣','Kraftfoder',s.feed+' kvar'],['brush','🧽','Borsta','Gnugga bort smuts'],
   ['hoof','🐴','Kratsa hovar','Tryck på hovarna'],['muck','💩','Mocka',h.d.dirt+' högar'],['carrot','🥕','Morot',s.carrot+' kvar'],['apple','🍎','Äpple',s.apple+' kvar'],['acc','😎','Prylar','Glasögon m.m.'],['look','🎨','Utseende','Namn & färger']]}
 function renderCare(){const w=$('#careBtns');renderStats($('#careStats'),G.care.d.st,true);
   if(G.sub==='acc'){const h=G.care;const own=SHOPITEMS.filter(i=>i.acc&&S.owned[i.id]);
@@ -1558,7 +1581,9 @@ function renderCare(){const w=$('#careBtns');renderStats($('#careStats'),G.care.
   w.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>careAct(b.dataset.c))}
 function careHint(t){const e=$('#careHint');if(!t){e.hidden=true;return}e.hidden=false;e.innerHTML=t}
 function needBuy(what){Snd.sad();note('Slut på '+what+'! Köp mer i butiken 🛒')}
-function careAct(id){const h=G.care,st=h.d.st,s=S.sup,bx=boxOf(h);if(!h||G.sub)return;Snd.click();
+function careAct(id){const h=G.care,st=h.d.st,s=S.sup,bx=boxOf(h);if(!h||G.sub)return;Snd.click();h.d.ready=h.d.ready||{};
+  if(id==='prephay'){if(h.d.ready.hay)return toast('Höet ligger redan i 🌾');if(s.hay<=0)return needBuy('hö');s.hay--;h.d.ready.hay=true;STABLE.hay[h.i].visible=true;PT.emit('hay',bx-1.85,.4,-17.05,16,{r:.6});toast('Hö framdukat! 🌾',h.d.name+' äter när hon kommer in');renderCare();saveGame();return}
+  if(id==='prepwater'){if(h.d.ready.water)return toast('Vattnet är redan fyllt 💧');h.d.ready.water=true;h.drinkT=2;Snd.slurp();PT.emit('splash',bx-2.05,1.2,-19.3,10,{size:.5});toast('Vatten fyllt! 💧');renderCare();saveGame();return}
   if(id==='hay'){if(s.hay<=0)return needBuy('hö');s.hay--;st.hunger=Math.min(100,st.hunger+35);STABLE.hay[h.i].visible=true;h.eatT=7;PT.emit('hay',bx-1.85,.4,-17.05,16,{r:.6});Snd.munch();if(st.hunger>92)say(h,'full',true);quest('hay')}
   else if(id==='feed'){if(s.feed<=0)return needBuy('kraftfoder');s.feed--;st.hunger=Math.min(100,st.hunger+18);st.energy=Math.min(100,st.energy+30);STABLE.feed[h.i].visible=true;h.eatT=5;Snd.munch();say(h,['Krisp-krasp! ⚡','Energi-boost!'],true)}
   else if(id==='water'){st.thirst=100;h.drinkT=2;Snd.slurp();PT.emit('splash',bx-2.05,1.2,-19.3,10,{size:.5});quest('water');say(h,['Ahh, perfekt temperatur.','Glugg glugg 💧'],true)}
@@ -1652,12 +1677,12 @@ function showResults(all,place,prize,tf,c){openModal('#mRes');G.paused=false;$('
 
 // ---------- styrning ----------
 const jz=$('#joyzone'),joyEl=$('#joy'),knob=joyEl.querySelector('i');
-function joyHome(){joyEl.style.left='110px';joyEl.style.top=(jz.clientHeight-110)+'px';knob.style.transform='';joyEl.classList.remove('on')}
-jz.addEventListener('pointerdown',e=>{if(G.joy.id!==null)return;G.joy.id=e.pointerId;const r=jz.getBoundingClientRect();G.joy.cx=e.clientX;G.joy.cy=e.clientY;G.joy.rx=r.left;G.joy.ry=r.top;
-  try{jz.setPointerCapture(e.pointerId)}catch(_){}joyEl.style.left=(e.clientX-r.left)+'px';joyEl.style.top=(e.clientY-r.top)+'px';joyEl.classList.add('on');e.preventDefault()});
-jz.addEventListener('pointermove',e=>{if(e.pointerId!==G.joy.id)return;let dx=e.clientX-G.joy.cx,dy=e.clientY-G.joy.cy;const R=60,l=Math.hypot(dx,dy);
-  if(l>R){G.joy.cx+=dx-dx/l*R;G.joy.cy+=dy-dy/l*R;dx=dx/l*R;dy=dy/l*R;joyEl.style.left=(G.joy.cx-G.joy.rx)+'px';joyEl.style.top=(G.joy.cy-G.joy.ry)+'px'}
-  G.joy.x=dx/R;G.joy.y=dy/R;knob.style.transform=`translate(${dx}px,${dy}px)`});
+function joyHome(){joyEl.style.left='calc(var(--sl) + 100px)';joyEl.style.top=(jz.clientHeight-100)+'px';knob.style.transform='';joyEl.classList.remove('on')}
+function joyMove(e){let dx=e.clientX-G.joy.cx,dy=e.clientY-G.joy.cy;const R=60,l=Math.hypot(dx,dy);if(l>R){dx=dx/l*R;dy=dy/l*R}
+  G.joy.x=dx/R;G.joy.y=dy/R;knob.style.transform=`translate(${dx}px,${dy}px)`}
+jz.addEventListener('pointerdown',e=>{if(G.joy.id!==null)return;G.joy.id=e.pointerId;const r=joyEl.getBoundingClientRect();G.joy.cx=r.left+r.width/2;G.joy.cy=r.top+r.height/2;
+  try{jz.setPointerCapture(e.pointerId)}catch(_){}joyEl.classList.add('on');joyMove(e);e.preventDefault()});
+jz.addEventListener('pointermove',e=>{if(e.pointerId!==G.joy.id)return;joyMove(e)});
 const joyUp=e=>{if(e.pointerId!==G.joy.id)return;G.joy.id=null;G.joy.x=G.joy.y=0;joyHome()};
 jz.addEventListener('pointerup',joyUp);jz.addEventListener('pointercancel',joyUp);
 const drag={id:null,x:0,y:0};
@@ -1694,7 +1719,7 @@ function step(dt){G.t+=dt;
   if(G.ride>=0){const h=G.horses[G.ride];const P=h.m.phase*Math.PI*2;const b=h.speed>2.6&&h.speed<6?Math.abs(Math.sin(P*2))*.07:h.speed>=6?(Math.sin(P)*.5+.5)*.05:0;
     player.model.animate(dt,{ride:true,bounce:b,lean:h.speed>6?.32:h.jumpT>=0?.45:.08,cheer:player.cheer>0});player.cheer-=dt}
   else if(G.mode==='title'){player.pos.set(-6,0,-6);player.model.g.position.set(-6,0,-6);player.model.g.rotation.y=-2.2;player.model.animate(dt,{speed:0})}
-  STABLE.doors.forEach(d=>{d.rotation.y=damp(d.rotation.y,d.userData.open?-1.9:0,6,dt)});
+  STABLE.doors.forEach(d=>{d.rotation.y=damp(d.rotation.y,d.userData.open?-1.9:0,6,dt)});updateGate(dt);
   G.jumps.home.forEach(J=>J.update(dt));G.jumps.venue.forEach(J=>J.update(dt));
   PT.update(dt);CLOUDS.update(dt);GULLS.update(G.t);SHOES.update(G.t);VENUE.crowd.update(G.t,dt);
   waterU.uT.value=G.t;grassU.uT.value=G.t;waterU.uCam.value.copy(camera.position);BEACH.boat.position.y=-.2+Math.sin(G.t*.9)*.15;BEACH.boat.rotation.z=Math.sin(G.t*.7)*.06;
