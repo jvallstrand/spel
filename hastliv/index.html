@@ -265,7 +265,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.5';
+const APP_VERSION='0.6';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1591,11 +1591,11 @@ function openCreator(mode,idx=0,breed){CR.mode=mode;CR.idx=idx;closeModals();$('
 $$('.ctab').forEach(t=>t.addEventListener('click',()=>{if(t.disabled)return;CR.step=t.dataset.step;$$('.ctab').forEach(x=>x.classList.toggle('on',x===t));renderCreator()}));
 function rowSw(title,list,cur,on,extra){return {title,html:'<div class="sw">'+list.map((c,i)=>`<button data-i="${i}" class="${c===cur?'on':''} ${c==='rainbow'?'rainbow':''}" style="background:${c}"></button>`).join('')+'</div>',bind:el=>el.querySelectorAll('.sw button').forEach(b=>b.onclick=()=>{on(list[+b.dataset.i]);Snd.click();renderCreator()}),extra}}
 function rowChips(title,list,cur,on){return {title,html:'<div class="chips">'+list.map((c,i)=>`<button data-i="${i}" class="${c[0]===cur?'on':''}">${c[2]?`<i style="background:${c[2]}"></i>`:''}${c[1]}</button>`).join('')+'</div>',bind:el=>el.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{on(list[+b.dataset.i][0]);Snd.click();renderCreator()})}}
-function rowName(title,val,ph,on,dice){return {title,html:`<div style="display:flex;gap:8px"><input class="nameIn" maxlength="14" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="${ph}">${dice?'<button class="btn white small dice">🎲</button>':''}</div>`,
-  bind:el=>{const i=el.querySelector('input');i.oninput=()=>on(i.value.trim());i.onkeydown=e=>e.stopPropagation();const d=el.querySelector('.dice');if(d)d.onclick=()=>{on(pick(HNAMES));renderCreator()}}}}
+function rowName(title,val,ph,on,dice){return {title,html:`<div style="display:flex;gap:8px"><input class="nameIn" type="text" name="spel-x-${Math.random().toString(36).slice(2,7)}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" data-form-type="other" maxlength="14" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="${ph}">${dice?'<button class="btn white small dice">🎲</button>':''}</div>`,
+  bind:el=>{const i=el.querySelector('input');i.oninput=()=>on(i.value.trim());i.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();i.blur()}};i.onblur=()=>setTimeout(()=>{window.scrollTo(0,0);resize()},60);const d=el.querySelector('.dice');if(d)d.onclick=()=>{on(pick(HNAMES));renderCreator()}}}}
 function renderCreator(){const body=$('#cbody');let rows=[];
   if(CR.step==='rider'){const r=S.rider;
-    rows=[rowName('Vad heter du?',r.name,'Ditt namn',v=>{r.name=v;setStableSign(v)}),
+    rows=[rowName('Vad heter du?',r.name,'Skriv här',v=>{r.name=v;setStableSign(v)}),
       rowSw('Hudton',SKINS,SKINS[r.skin],c=>r.skin=SKINS.indexOf(c)),rowSw('Hårfärg',HAIRC,HAIRC[r.hair],c=>r.hair=HAIRC.indexOf(c)),
       rowChips('Frisyr',HAIRS,r.style,v=>r.style=v),rowSw('Tröja',SHIRTS,r.shirt,c=>r.shirt=c),rowSw('Ridbyxor',PANTS,r.pants,c=>r.pants=c),
       rowSw('Hjälm',HELMS,r.helmet,c=>{r.helmet=c;G.showHelm=2})];
@@ -1629,6 +1629,9 @@ function stageUpdate(dt){const s=G.stage;const step=CR.step;
   else{const h=ch.h;if(step==='horse'){if(h.state!=='stage'){CR.prevState=h.state;h.state='stage'}h.pos.set(s.x,groundH(s.x,s.z),s.z);h.yaw=Math.PI/2+.55+G.stageYaw;h.m.g.visible=true}
     else if(h.state==='stage'){h.state=CR.prevState||'box';placeHorse(h)}}}
 
+// tryck utanför ett textfält = fäll ner tangentbordet
+document.addEventListener('pointerdown',e=>{const a=document.activeElement;if(a&&a.tagName==='INPUT'&&e.target!==a)a.blur()},true);
+window.addEventListener('focusout',()=>setTimeout(()=>{if(!document.activeElement||document.activeElement.tagName!=='INPUT'){window.scrollTo(0,0)}},80));
 // ---------- spela ----------
 function startPlay(first){G.mode='play';$('#title').hidden=true;showHud(true);closeModals();frameMode(null);
   if(G.ride<0){scene.add(player.model.g);player.model.g.visible=true;if(first||!G.started){player.pos.set(-12,0,-6);player.yaw=Math.PI*.85}}
