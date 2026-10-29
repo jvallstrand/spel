@@ -127,7 +127,7 @@ body.incomp #live{top:calc(var(--st) + 100px)}
     <div id="err" hidden>Spelet kunde inte laddas. Öppna appen med internet en gång.</div>
     <div class="help"><b>På marken:</b> joystick = spring och sväng · HOPP: hoppa · spring in i en låg vägg = klättra upp<br>
       <b>I luften:</b> åt sidan = 180/360 · knuffa framåt = frontflip · bakåt = backflip · hoppa längs en hög vägg = väggspring (HOPP igen = hoppa ut)<br>
-      <b>Räcken:</b> landa på ett räcke för att glida · <b>Butiken:</b> spring in på den gröna cirkeln vid butiken på Torget<br>
+      <b>Kullerbytta:</b> tryck innan du landar när du hoppar från något högt, annars ramlar du · <b>Glida:</b> glid på marken i fart · <b>Räcken:</b> landa på ett räcke för att glida · <b>Butiken:</b> spring in på den gröna cirkeln vid butiken på Torget<br>
       🎒 välj kläder och vilka trick som ligger på knapparna · 🗺️ karta (tryck för att springa dit)</div>
     <footer class="appfoot"><span>Version <b class="appver"></b></span><button type="button" class="updBtn">Uppdatera appen</button></footer>
   </div>
@@ -147,7 +147,7 @@ body.incomp #live{top:calc(var(--st) + 100px)}
 <script>
 (function(){
 'use strict';
-const APP_VERSION='0.1',CACHE_PREFIX='spel-',LS_SAVE='park:save';
+const APP_VERSION='0.2',CACHE_PREFIX='spel-',LS_SAVE='park:save';
 document.querySelectorAll('.appver').forEach(el=>el.textContent=APP_VERSION);
 document.querySelectorAll('.updBtn').forEach(btn=>btn.addEventListener('click',async()=>{
   btn.disabled=true;btn.textContent='Uppdaterar…';
@@ -298,8 +298,8 @@ function whereAmI(x,y,z){
    BUTIKEN
    ========================================================= */
 const ITEMS={
-  t_star:{cat:'trick',name:'Stjärna',price:0,k:'star',pts:100,d:0.45},
-  t_split:{cat:'trick',name:'Spagat',price:0,k:'split',pts:110,d:0.45},
+  t_slide:{cat:'trick',name:'Glida',price:0,k:'slide',act:'slide',d:0.9},
+  t_roll:{cat:'trick',name:'Kuller\u00ADbytta',price:0,k:'roll',act:'roll',d:0.55},
   t_tuck:{cat:'trick',name:'Tuck',price:150,k:'tuck',pts:120,d:0.45},
   t_kick:{cat:'trick',name:'Kick-out',price:300,k:'kickout',pts:140,d:0.5},
   t_super:{cat:'trick',name:'Superman',price:500,k:'super',pts:170,d:0.55},
@@ -337,9 +337,12 @@ const ITEMS={
 };
 const CATS=[['trick','Trick','⭐'],['top','Tröjor','👕'],['pants','Byxor','👖'],['shoe','Skor','👟'],['hat','Kepsar & mössor','🧢']];
 const catIcon=c=>(CATS.find(x=>x[0]===c)||[])[2]||'';
-const DEFAULT_SAVE={money:0,score:0,best:0,own:{t_star:1,t_split:1,o_grey:1,p_black:1,h_none:1,s_old:1},top:'o_grey',pants:'p_black',hat:'h_none',shoe:'s_old',slots:['t_star','t_split'],comps:{}};
+const DEFAULT_SAVE={money:0,score:0,best:0,own:{t_slide:1,t_roll:1,o_grey:1,p_black:1,h_none:1,s_old:1},top:'o_grey',pants:'p_black',hat:'h_none',shoe:'s_old',slots:['t_slide','t_roll'],comps:{}};
 let save=JSON.parse(JSON.stringify(DEFAULT_SAVE));
 try{const s=JSON.parse(localStorage.getItem(LS_SAVE)||'null');if(s&&s.own)save=Object.assign(save,s);}catch(e){}
+// Stjärna och Spagat finns inte längre; Glida och Kullerbytta har alla
+delete save.own.t_star;delete save.own.t_split;save.own.t_slide=1;save.own.t_roll=1;
+save.slots=save.slots.filter(id=>ITEMS[id]&&id!=='t_slide'&&id!=='t_roll');save.slots=['t_slide','t_roll',...save.slots].slice(0,4);
 function persist(){try{localStorage.setItem(LS_SAVE,JSON.stringify(save));}catch(e){}}
 function runStats(){const s=ITEMS[save.shoe];return {maxs:s.maxs,acc:950,frict:750,turn:4.4,jump:s.jump};}
 function lookOf(){const h=ITEMS[save.hat];return {top:ITEMS[save.top].col,pants:ITEMS[save.pants].col,skin:0xf1c7a4,glove:0xf1c7a4,shoe:ITEMS[save.shoe].col,helmet:h.col,hat:h.hat,stripe:0x111111};}
@@ -350,7 +353,7 @@ function lookOf(){const h=ITEMS[save.hat];return {top:ITEMS[save.top].col,pants:
 function newRider(x,y,ang,st){
   return {x,y,ang,vx:0,vy:0,z:ground(x,y),vz:0,air:false,airT:0,flipTo:null,baseAng:ang,spin:0,flip:0,flipT:0,tr:[],tricks:[],crashT:0,pitch:0,roll:0,wheel:0,st,onTakeoff:null,grind:null,wall:null,mantle:null,wallCool:0};
 }
-function takeoff(R,vz){R.air=true;R.vz=vz;R.airT=0;R.baseAng=R.ang;R.spin=0;R.flip=0;R.flipTo=null;if(R.onTakeoff)R.onTakeoff(R);}
+function takeoff(R,vz){if(R.slide)R.slide=null;R.rollT=0;R.air=true;R.vz=vz;R.airT=0;R.peak=R.z;R.baseAng=R.ang;R.spin=0;R.flip=0;R.flipTo=null;if(R.onTakeoff)R.onTakeoff(R);}
 function clean(R){return !R.tr.some(a=>!a.ground)&&R.flipT<=0&&Math.abs(wrap(R.flip))<0.6;}
 function startMantle(R,nx,ny){
   if(R.air&&!clean(R))return false;
@@ -362,7 +365,7 @@ function startMantle(R,nx,ny){
   tx+=ux*24;ty+=uy*24;
   const top=ground(tx,ty);if(top>wallTop+5||top<R.z)return false;
   const dh=top-R.z;
-  R.mantle={x0:R.x,y0:R.y,z0:R.z,x1:tx,y1:ty,top,t:0,dur:0.22+dh/650,keep:Math.max(120,Math.min(sp,R.st.maxs)*0.6),ux,uy};
+  R.peak=-1e9;R.mantle={x0:R.x,y0:R.y,z0:R.z,x1:tx,y1:ty,top,t:0,dur:0.22+dh/650,keep:Math.max(120,Math.min(sp,R.st.maxs)*0.6),ux,uy};
   R.tricks=R.tricks||[];R.tricks.push({name:dh>75?'Klättring':'Vault',pts:dh>75?60:35});
   R.spin=0;R.flip=0;R.flipT=0;R.air=true;R.vz=0;R.ang=Math.atan2(uy,ux);R.baseAng=R.ang;
   return true;
@@ -406,13 +409,17 @@ function endWall(R,jump){
   const W=R.wall;if(!W)return;
   R.tricks.push({name:'Väggspring',pts:Math.round(120+W.t*300)});
   if(comp&&!comp.pre&&comp.def.type==='wall'&&R===P)comp.val+=W.t;
-  R.wall=null;R.wallCool=0.35;R.roll=0;
+  R.wall=null;R.wallCool=0.35;R.roll=0;R.peak=R.z;
   if(jump){
     R.vz=380*R.st.jump;R.vx=W.ux*W.spd*0.75+W.nx*270;R.vy=W.uy*W.spd*0.75+W.ny*270;
     R.ang=Math.atan2(R.vy,R.vx);R.baseAng=R.ang;R.spin=0;R.airT=0;
     if(R===P){P.flipArm=Math.abs(js.y)<0.3;P.spinArm=Math.abs(js.x)<0.15;}
   }
 }
+const ROLL_DROP=170;
+function endSlide(R){const sl=R.slide;R.slide=null;if(R===P&&sl&&sl.v>150)award([{name:'Glida',pts:50}]);}
+function startSlide(){const sp=Math.hypot(P.vx,P.vy);if(P.air||P.slide||P.rollT>0||sp<120)return;P.slide={t:0,d:0.9,v:sp};P.tr=[];}
+function startRoll(){if(P.air||P.slide||P.rollT>0)return;P.rollT=0.55;P.rollD=0.55;award([{name:'Kullerbytta',pts:40}]);}
 function physics(R,steer,thr,dt){
   const V=R.st;
   R.wallCool-=dt;
@@ -420,8 +427,11 @@ function physics(R,steer,thr,dt){
   if(R.wall)return updateWall(R,dt);
   if(!R.air){
     let spd=R.vx*Math.cos(R.ang)+R.vy*Math.sin(R.ang);
+    if(R.slide){steer*=0.35;thr=0;R.slide.t+=dt;spd-=Math.sign(spd)*Math.min(Math.abs(spd),150*dt);if(R.slide.t>=R.slide.d||Math.abs(spd)<70)endSlide(R);}
+    if(R.rollT>0){R.rollT-=dt;thr=Math.max(thr,0.6);}
     R.ang+=steer*V.turn*dt*(Math.abs(spd)<30?0.8:1);
-    if(thr>0.15){const tgt=V.maxs*Math.min(1,thr*1.15);if(spd<tgt)spd=Math.min(tgt,spd+V.acc*dt);else spd-=Math.min(spd-tgt,V.frict*dt);}
+    if(R.slide){}
+    else if(thr>0.15){const tgt=V.maxs*Math.min(1,thr*1.15);if(spd<tgt)spd=Math.min(tgt,spd+V.acc*dt);else spd-=Math.min(spd-tgt,V.frict*dt);}
     else if(thr<-0.3){spd-=Math.min(Math.max(spd,0),V.acc*1.6*dt);if(spd<=0)spd=Math.max(-90,spd-200*dt);}
     else spd-=Math.sign(spd)*Math.min(Math.abs(spd),V.frict*dt);
     const nc=Math.cos(R.ang),ns=Math.sin(R.ang);
@@ -464,7 +474,7 @@ function physics(R,steer,thr,dt){
       R.vx*=-0.15;R.vy*=-0.15;
     }else{R.x=nx;R.y=ny;}
   }
-  R.vz-=G*dt;R.z+=R.vz*dt;
+  R.vz-=G*dt;R.z+=R.vz*dt;if(R.peak===undefined||R.z>R.peak)R.peak=R.z;
   const gh=ground(R.x,R.y);
   if(R.z<=gh){R.z=gh;R.air=false;R.vz=0;return true;}
   return false;
@@ -529,12 +539,14 @@ const slotTricks=()=>save.slots.filter(id=>save.own[id]&&ITEMS[id]).slice(0,4);
 function trickBtn(i){
   if(!canAct()||P.mantle||P.wall)return;
   const id=slotTricks()[i];if(!id)return;const d=ITEMS[id];
+  if(d.act==='slide'){if(!P.grind)startSlide();return;}
+  if(d.act==='roll'){if(P.air&&!P.grind){if(!P.rollArm){P.rollArm=true;}}else if(!P.grind)startRoll();return;}
   if(P.tr.some(a=>a.i===i))return;
   if(d.ground){if(P.air||P.grind)return;P.tr.push({i,k:d.k,d:d.d,t:d.d,ground:true});return;}
   if(!P.air||P.grind)return;
   P.tr.push({i,k:d.k,d:d.d,t:d.d,name:d.name,pts:d.pts});
 }
-P.onTakeoff=R=>{R.tricks=[];R.tr=[];R.flipT=0;R.flipArm=Math.abs(js.y)<0.3;R.spinArm=Math.abs(js.x)<0.15;};
+P.onTakeoff=R=>{R.rollArm=false;R.tricks=[];R.tr=[];R.flipT=0;R.flipArm=Math.abs(js.y)<0.3;R.spinArm=Math.abs(js.x)<0.15;};
 function setButtons(){const ts=slotTricks();[0,1,2,3].forEach(i=>{const b=$('t'+i),id=ts[i];b.hidden=!id;if(id)b.textContent=ITEMS[id].name.toUpperCase();});}
 
 /* ---------- glida på räcken ---------- */
@@ -561,7 +573,7 @@ function updateGrind(dt){
 function leaveGrind(vz){
   const g=P.grind;if(!g)return;
   P.tricks.push({name:'Räckglid',pts:Math.round(180+g.t*320)});P.grind=null;
-  P.air=true;P.vz=vz;P.spin=0;P.flip=0;P.baseAng=P.ang;P.flipArm=Math.abs(js.y)<0.3;P.spinArm=Math.abs(js.x)<0.15;
+  P.air=true;P.vz=vz;P.peak=P.z;P.spin=0;P.flip=0;P.baseAng=P.ang;P.flipArm=Math.abs(js.y)<0.3;P.spinArm=Math.abs(js.x)<0.15;
 }
 
 /* ---------- poäng & pengar ---------- */
@@ -583,7 +595,11 @@ function landPlayer(){
   const rs=wrap(P.spin),rf=wrap(P.flip);
   const ok=Math.abs(rs)<0.8, back=Math.abs(rs)>Math.PI-0.8;
   if(P.tr.some(a=>!a.ground)||P.flipT>0||Math.abs(rf)>0.8||(!ok&&!back)){P.ang=landBase(P);crash();return;}
+  const drop=(P.peak||P.z)-P.z,rolled=P.rollArm;P.rollArm=false;
+  if(drop>ROLL_DROP&&!rolled){P.ang=landBase(P);crash();addPopup('Gör kullerbytta!','när du hoppar från höga ställen','#ffd23a');return;}
   P.ang=landBase(P)+(back?Math.PI:0);P.baseAng=P.ang;if(back){P.vx*=-0.3;P.vy*=-0.3;}
+  if(rolled){P.tricks.push({name:'Kullerbytta',pts:drop>ROLL_DROP?100:40});P.rollT=0.55;P.rollD=0.55;
+    const sp=Math.hypot(P.vx,P.vy);if(sp<160){P.vx=Math.cos(P.ang)*160;P.vy=Math.sin(P.ang)*160;}}
   const t=trickWords(P);P.spin=0;P.flip=0;P.tricks=[];P.tr=[];
   if(!t.parts.length||t.pts<=0)return;
   const pts=Math.round(t.pts*Math.max(1,t.n)+P.airT*40);
@@ -595,9 +611,17 @@ function landPlayer(){
   if(pts>save.best){save.best=pts;setTimeout(()=>addPopup('Nytt rekord!','','#ffd23a'),350);}
   persist();updHud();
 }
+function award(list){
+  const save0=P.tricks;P.tricks=list;const sp=P.spin,fl=P.flip;P.spin=0;P.flip=0;
+  const t=trickWords(P);P.tricks=save0;P.spin=sp;P.flip=fl;
+  const pts=t.pts,kr=Math.max(1,Math.round(pts/12));save.score+=pts;save.money+=kr;
+  addPopup(t.parts.join(' + '),'+'+pts+' p · +'+kr+' kr');
+  if(comp&&!comp.pre&&comp.def.type==='score')comp.val+=pts;
+  persist();updHud();
+}
 function crash(){
   startRagdoll(player);
-  P.crashT=CRASH_T;P.flipT=0;P.tr=[];P.tricks=[];P.spin=0;P.flip=0;P.baseAng=P.ang;P.grind=null;P.wall=null;P.mantle=null;P.hitHard=false;
+  P.crashT=CRASH_T;P.flipT=0;P.tr=[];P.tricks=[];P.spin=0;P.flip=0;P.baseAng=P.ang;P.grind=null;P.wall=null;P.mantle=null;P.slide=null;P.rollT=0;P.rollArm=false;P.hitHard=false;
   addPopup('Aj!','','#ff6a5a');
 }
 const pops=$('pops');
@@ -899,9 +923,10 @@ function poseAvatar(A,dt){
   const tr=R.tr||[];
   for(const a of tr)if(['tuck','kickout','side','butterfly','cork','webster','twist'].includes(a.k))tuck=1;
   if(R.flipT>0||(R.flipRate||0)>0.5)tuck=1;
+  if(R.rollArm&&R.air)tuck=Math.max(tuck,0.6);
   A.tuckW+=(tuck-A.tuckW)*Math.min(1,dt*12);
   const p=lerpPose(RIDE,TUCK,A.tuckW,A.pose);
-  const runCycle=(!R.air||R.wall)&&!R.grind&&!R.mantle;
+  const runCycle=(!R.air||R.wall)&&!R.grind&&!R.mantle&&!R.slide&&!(R.rollT>0);
   if(runCycle){
     const sp=Math.hypot(R.vx,R.vy),amp=Math.min(1.25,sp/180),ph=R.wheel*0.42,s=Math.sin(ph),c=Math.cos(ph);
     p.footL.x+=16*amp*s;p.footR.x-=16*amp*s;p.footL.y+=9*amp*Math.max(0,c);p.footR.y+=9*amp*Math.max(0,-c);
@@ -909,6 +934,15 @@ function poseAvatar(A,dt){
     p.haL.x-=16*amp*s;p.haR.x+=16*amp*s;p.elL.x-=7*amp*s;p.elR.x+=7*amp*s;p.haL.y+=6*amp;p.haR.y+=6*amp;
     const lean=Math.min(1,sp/300)*8;p.neck.x+=lean;p.head.x+=lean;p.shL.x+=lean;p.shR.x+=lean;
   }
+  if(R.slide){
+    p.pelvis.set(-6,24,0);p.hipL.set(-6,22,-6);p.hipR.set(-6,22,6);
+    p.kneeL.set(12,12,-7);p.footL.set(32,4,-7);p.kneeR.set(6,20,8);p.footR.set(-10,4,8);
+    p.neck.set(-14,52,0);p.head.set(-14,64,0);p.shL.set(-14,50,-12);p.shR.set(-14,50,12);
+    p.elL.set(-22,32,-16);p.haL.set(-26,10,-16);p.elR.set(-4,44,18);p.haR.set(8,52,22);
+  }
+  if(R.rollT>0){A.tuckW=1;lerpPose(RIDE,TUCK,1,p);p.footL.add(V3(6,20,0));p.footR.add(V3(6,20,0));p.kneeL.add(V3(12,16,0));p.kneeR.add(V3(12,16,0));
+    p.haL.copy(p.kneeL).add(V3(4,2,-4));p.haR.copy(p.kneeR).add(V3(4,2,4));
+    const pr=1-R.rollT/(R.rollD||0.55);A.flipG.rotation.set(0,0,-pr*TAU);}
   if(R.mantle){p.haL.lerp(V3(16,92,-14),1);p.haR.lerp(V3(16,92,14),1);p.elL.lerp(V3(10,84,-18),1);p.elR.lerp(V3(10,84,18),1);}
   if(R.wall){const s=R.wall.s;const k=s>0?'L':'R';p['ha'+k].lerp(V3(4,96,s>0?-30:30),1);p['el'+k].lerp(V3(4,86,s>0?-24:24),1);}
   for(const a of tr){const pr=clamp(1-a.t/a.d,0,1),e=Math.sin(Math.PI*pr);
@@ -977,7 +1011,7 @@ const npcs=ROUTES.map((r,i)=>{
   R.av=makeAvatar(R,{glove:NPC_LOOKS[i].skin,stripe:0x111111,...NPC_LOOKS[i]});
   return R;
 });
-const NPC_TRICKS=[['star'],['split'],['tuck'],['side'],['kickout'],['super']];
+const NPC_TRICKS=[['tuck'],['side'],['kickout'],['super']];
 function npcPlanTrick(R){
   const T=2*Math.max(0,R.vz)/G;R.npc.T=T;R.npc.trick=null;R.npc.spin=0;R.npc.flip=0;
   if(T<0.6)return;const r=rnd();
@@ -1135,7 +1169,7 @@ function endRagdoll(A){
   A.root.visible=true;A.rag=null;
   R.x=clamp(pel.x,WX0+20,WX1-20);R.y=clamp(pel.z,WY0+20,WY1-20);
   for(let i=0;i<40&&treeAt(R.x,R.y,16);i++){R.x+=Math.cos(R.ang+Math.PI)*15;R.y+=Math.sin(R.ang+Math.PI)*15;}
-  R.z=ground(R.x,R.y);R.vx=R.vy=R.vz=0;R.air=false;R.crashT=0;R.spin=R.flip=0;R.baseAng=R.ang;R.flipTo=null;R.tr=[];R.grind=null;R.wall=null;R.mantle=null;
+  R.z=ground(R.x,R.y);R.vx=R.vy=R.vz=0;R.air=false;R.crashT=0;R.spin=R.flip=0;R.baseAng=R.ang;R.flipTo=null;R.tr=[];R.grind=null;R.wall=null;R.mantle=null;R.slide=null;R.rollT=0;R.peak=R.z;
 }
 const REL_HIT=200;
 function knockDown(R){
@@ -1205,7 +1239,7 @@ function startComp(def){
 }
 function resetP(x,y,a){
   if(P.crashT>0||player.rag){P.crashT=0;endRagdoll(player);}
-  Object.assign(P,{x,y,ang:a,baseAng:a,vx:0,vy:0,vz:0,z:ground(x,y),air:false,spin:0,flip:0,flipT:0,tr:[],tricks:[],grind:null,wall:null,mantle:null});
+  Object.assign(P,{x,y,ang:a,baseAng:a,vx:0,vy:0,vz:0,z:ground(x,y),air:false,spin:0,flip:0,flipT:0,tr:[],tricks:[],grind:null,wall:null,mantle:null,slide:null,rollT:0,rollArm:false,peak:ground(x,y)});
   camYaw=a;updateCamera(0,true);
 }
 function updateComp(dt){
@@ -1371,10 +1405,12 @@ const live=$('live'),whereEl=$('where');
 function liveText(){
   if(P.grind)return 'Räckglid '+P.grind.t.toFixed(1)+' s';
   if(P.wall)return 'Väggspring '+P.wall.t.toFixed(1)+' s';
+  if(P.slide)return 'Glida…';
   if(!P.air||P.crashT>0||P.mantle)return '';
   const t=trickWords(P),parts=t.parts.slice();
   for(const a of P.tr)if(!a.ground)parts.push(a.name+'…');
   if(P.flipT>0)parts.push('flip…');
+  if(P.rollArm)parts.push('kullerbytta redo');
   return parts.join(' + ');
 }
 function step(dt){
