@@ -164,7 +164,7 @@ table.board td.n{text-align:right}
 <script>
 (function(){
 'use strict';
-const APP_VERSION='0.1',CACHE_PREFIX='spel-',LS_SAVE='puck:save';
+const APP_VERSION='0.2',CACHE_PREFIX='spel-',LS_SAVE='puck:save';
 document.querySelectorAll('.appver').forEach(el=>el.textContent=APP_VERSION);
 document.querySelectorAll('.updBtn').forEach(btn=>btn.addEventListener('click',async()=>{
   btn.disabled=true;btn.textContent='Uppdaterar…';
@@ -199,8 +199,8 @@ function terrain(x,y){
 }
 // puckelpisterna (rakt nerför berget, mot minus x)
 const COURSES=[
-  {id:'green',name:'Gröna puckeln',y:2200,xs:2750,xf:350,spacing:175,win:0.20,bump:22,vbase:270,jumps:[0.33,0.72],kH:40,col:0x16a34a},
-  {id:'blue',name:'Blå puckeln',y:2800,xs:3950,xf:400,spacing:155,win:0.16,bump:28,vbase:300,jumps:[0.33,0.72],kH:48,col:0x2b6cff},
+  {id:'green',name:'Gröna puckeln',y:2200,xs:3650,xf:350,spacing:175,win:0.20,bump:22,vbase:270,jumps:[0.33,0.72],kH:40,col:0x16a34a},
+  {id:'blue',name:'Blå puckeln',y:2800,xs:4750,xf:400,spacing:155,win:0.16,bump:28,vbase:300,jumps:[0.33,0.72],kH:48,col:0x2b6cff},
   {id:'red',name:'Röda puckeln',y:3400,xs:4850,xf:450,spacing:140,win:0.13,bump:33,vbase:330,jumps:[0.33,0.72],kH:56,col:0xd93030},
   {id:'black',name:'Svarta puckeln',y:4000,xs:5100,xf:500,spacing:126,win:0.105,bump:37,vbase:355,jumps:[0.33,0.72],kH:64,col:0x111111},
   {id:'train',name:'Träningspuckeln',y:-250,xs:2350,xf:350,spacing:190,win:0.25,bump:20,vbase:250,jumps:[0.5],kH:40,col:0x0ea5e9,priv:true,price:800,desc:'En lugn backe med mycket tid mellan pucklarna. Perfekt för att öva takten.'},
@@ -211,7 +211,12 @@ const COLS=[-157,-67,23,113],BUMP_R=58,HALFW=200;
 for(const c of COURSES){
   c.L=c.xs-c.xf;c.first=90;c.rows=Math.floor((c.L-c.first-90)/c.spacing)+1;c.skip=new Array(c.rows).fill(false);
   c.kick=c.jumps.map(f=>{const s=Math.round(c.L*f);return {s,len:90,lip:s+90};});
-  for(let k=0;k<c.rows;k++){const s=c.first+k*c.spacing;if(c.kick.some(j=>s>j.s-70&&s<j.lip+230))c.skip[k]=true;}
+  // en liten vanlig backe före hoppet och efter landningen
+  // räkna ut hur långt hoppet går i högsta fart
+  const landDist=f=>{let d=0,z=c.kH,vz=250+c.kH*2.2,v=c.vbase*f,x0=c.xs;const j=c.kick[0];const lipX=c.xs-j.lip;z+=terrain(lipX,c.y);
+    for(let i=0;i<400;i++){d+=v/60;vz-=G/60;z+=vz/60;if(z<=terrain(lipX-d,c.y)&&vz<0)break;}return d;};
+  c.flatBefore=150;c.flatAfter=landDist(1.12)+80;
+  for(let k=0;k<c.rows;k++){const s=c.first+k*c.spacing;if(c.kick.some(j=>s>j.s-c.flatBefore&&s<j.lip+c.flatAfter))c.skip[k]=true;}
   c.bumpS=[];for(let k=0;k<c.rows;k++)if(!c.skip[k])c.bumpS.push(k);
 }
 const rowLat=k=>(k%2)?-22:23;
@@ -241,7 +246,7 @@ const RUNWAY={name:'Nedfarten',y:700,xs:5200,xf:200,w:420};
 const FREE_KICKS=[{x0:3800,y:700,len:150,wid:220,h:55},{x0:2600,y:620,len:160,wid:220,h:62},{x0:1500,y:760,len:140,wid:200,h:48}];
 const LIFTS=[
   {name:'Stolliften',type:'chair',x0:250,y0:1450,x1:5150,y1:1450,T:24},
-  {name:'Knappliften',type:'tbar',x0:250,y0:1750,x1:2950,y1:1750,T:18},
+  {name:'Knappliften',type:'tbar',x0:250,y0:1750,x1:3800,y1:1750,T:22},
 ];
 const HANG={chair:230,tbar:120};
 for(const L of LIFTS){
@@ -534,6 +539,7 @@ function updateRun(dt){
     placeRun();R_wheel(dt);
   }else if(r.phase==='air'){
     r.s+=r.v*dt;r.vz-=G*dt;r.z+=r.vz*dt;P.airT+=dt;updateTricks(dt);
+    for(const k of c.bumpS){const sk=c.first+k*c.spacing;if(sk>r.s)break;if(!r.res[k]){r.res[k]='air';r.nb--;}}
     const x=c.xs-r.s,y=c.y;P.x=x;P.y=y;P.z=r.z;P.ang=Math.PI+P.spin;P.baseAng=Math.PI;P.pitch*=0.9;P.roll*=0.9;
     const gh=ground(x,y);
     if(r.z<=gh&&r.vz<0){
