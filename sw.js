@@ -1,4 +1,4 @@
-const CACHE = 'spel-v6';
+const CACHE = 'spel-v7';
 const FILES = ['./', './index.html'];
 const CDN = /(fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com)$/;
 self.addEventListener('install', e => {

@@ -129,7 +129,7 @@ body.incomp #live{top:calc(var(--st) + 100px)}
     <div class="walletBig" id="menuMoney"></div>
     <div class="btns"><button class="big" id="bStart">SPRING!</button><button class="big alt" id="bComps">TÄVLINGAR</button><a class="big alt" href="../">ALLA SPEL</a></div>
     <div id="err" hidden>Spelet kunde inte laddas. Öppna appen med internet en gång.</div>
-    <div class="help"><b>På marken:</b> joystick = spring och sväng · HOPP: hoppa · spring in i en låg vägg = klättra upp<br>
+    <div class="help"><b>På marken:</b> joystick = spring och sväng · HOPP: hoppa (håll inne för att hoppa högre) · spring in i en låg vägg = klättra upp<br>
       <b>I luften:</b> joysticken styr vart du flyger · Frontflip och Backflip är knappar · snurr (180, 360 …) köper du i butiken · hoppa längs en hög vägg = väggspring (HOPP igen = hoppa ut)<br>
       <b>Kullerbytta:</b> tryck innan du landar när du hoppar från något högt, annars ramlar du · <b>Glida:</b> glid på marken i fart · <b>Räcken:</b> landa på ett räcke för att glida · <b>Butiken:</b> spring in på den gröna cirkeln vid butiken på Torget<br>
       🎒 välj kläder och vilka trick som ligger på knapparna · 🗺️ karta (tryck för att springa dit)</div>
@@ -151,7 +151,7 @@ body.incomp #live{top:calc(var(--st) + 100px)}
 <script>
 (function(){
 'use strict';
-const APP_VERSION='0.3',CACHE_PREFIX='spel-',LS_SAVE='park:save';
+const APP_VERSION='0.4',CACHE_PREFIX='spel-',LS_SAVE='park:save';
 document.querySelectorAll('.appver').forEach(el=>el.textContent=APP_VERSION);
 document.querySelectorAll('.updBtn').forEach(btn=>btn.addEventListener('click',async()=>{
   btn.disabled=true;btn.textContent='Uppdaterar…';
@@ -541,11 +541,16 @@ function readKeys(){
   js.x=kx;js.y=ky;js.mag=Math.min(1,Math.hypot(kx,ky));
 }
 function canAct(){return running&&!P.crashT&&!(comp&&comp.pre>0);}
+// håll inne HOPP för att hoppa högre
+const JUMP_HOLD=0.28,JUMP_BOOST=720;
+let jumpHeld=false;
+{const b=$('bJump');b.addEventListener('pointerdown',()=>{jumpHeld=true;});['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>{jumpHeld=false;}));
+  window.addEventListener('keydown',e=>{if(e.key===' ')jumpHeld=true;});window.addEventListener('keyup',e=>{if(e.key===' ')jumpHeld=false;});}
 function jump(){
   if(!canAct()||P.mantle)return;
   if(P.wall){endWall(P,true);return;}
   if(P.grind){leaveGrind(330);return;}
-  if(P.air)return;P.tr=[];takeoff(P,380*P.st.jump);
+  if(P.air)return;P.tr=[];takeoff(P,300*P.st.jump);P.jumpHold=JUMP_HOLD;
 }
 const MAXSLOTS=6;
 const slotTricks=()=>save.slots.filter(id=>save.own[id]&&ITEMS[id]).slice(0,MAXSLOTS);
@@ -561,7 +566,7 @@ function trickBtn(i){
   if(!P.air||P.grind)return;
   P.tr.push({i,k:d.k,d:d.d,t:d.d,name:d.name,pts:d.pts});
 }
-P.onTakeoff=R=>{R.rollArm=false;R.spinT=0;R.tricks=[];R.tr=[];R.flipT=0;R.flipArm=Math.abs(js.y)<0.3;R.spinArm=Math.abs(js.x)<0.15;};
+P.onTakeoff=R=>{R.jumpHold=0;R.rollArm=false;R.spinT=0;R.tricks=[];R.tr=[];R.flipT=0;R.flipArm=Math.abs(js.y)<0.3;R.spinArm=Math.abs(js.x)<0.15;};
 function setButtons(){const ts=slotTricks();[0,1,2,3,4,5].forEach(i=>{const b=$('t'+i),id=ts[i];b.hidden=!id;if(id)b.textContent=ITEMS[id].name.toUpperCase();});}
 
 /* ---------- glida på räcken ---------- */
@@ -656,6 +661,7 @@ function updatePlayer(dt){
   for(const a of P.tr.slice()){a.t-=dt;if(a.t<=0){P.tr.splice(P.tr.indexOf(a),1);if(!a.ground)P.tricks.push({name:a.name,pts:a.pts});}}
   if(P.air)P.tr=P.tr.filter(a=>!a.ground);
   const steer=Math.abs(js.x)>0.15?js.x:0,thr=-js.y;
+  if(P.jumpHold>0){if(jumpHeld&&P.air&&!P.wall&&!P.mantle&&P.vz>0){P.vz+=JUMP_BOOST*dt;P.jumpHold-=dt;}else P.jumpHold=0;}
   if(P.air&&!P.wall&&!P.mantle){
     if(P.spinT>0){
       P.spinT-=dt;const p=1-Math.max(P.spinT,0)/P.spinD;
