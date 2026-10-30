@@ -91,6 +91,8 @@ button{font-family:inherit;color:inherit}
 .hudR{position:absolute;right:calc(var(--sr) + 12px);top:calc(var(--st) + 10px);display:flex;gap:10px}
 #quest{position:absolute;left:50%;top:calc(var(--st) + 10px);transform:translateX(-50%);max-width:min(460px,46vw);background:var(--sun);border:3px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--ink);padding:6px 12px;font-weight:900;font-size:15px;text-align:center;pointer-events:none;line-height:1.2}
 #quest b{font-family:var(--display);font-weight:400;font-size:13px;display:block;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
+#quest .qskip{pointer-events:auto;display:inline-block;margin-left:8px;vertical-align:middle;background:#fff;border:2px solid var(--ink);border-radius:999px;font-family:var(--body);font-weight:900;font-size:12px;padding:3px 9px;cursor:pointer;color:var(--ink);touch-action:manipulation}
+#quest .qskip:active{transform:translateY(2px)}
 #quest.done{animation:qpop .7s}
 @keyframes qpop{30%{transform:translateX(-50%) scale(1.15) rotate(-3deg);background:var(--mint)}}
 #joyzone{position:absolute;left:0;bottom:0;width:48%;height:62%;touch-action:none}
@@ -173,7 +175,7 @@ button{font-family:inherit;color:inherit}
   .carepanel{width:min(300px,44vw)}.carebtns .btn em{font-size:20px}.carepanel h2{font-size:20px;padding:6px 12px 0}
   .stats.big{font-size:13px;gap:1px 6px;grid-template-columns:20px 1fr 28px}.stats.big .bar{height:9px}.stats.big em{font-size:11px}
   .carebtns .btn{font-size:13px;padding:5px 4px}.carebtns .btn small{display:none}
-  #quest{font-size:12px;max-width:36vw;padding:4px 10px;border-radius:12px}#quest b{display:none}
+  #quest{font-size:12px;max-width:40vw;padding:4px 10px;border-radius:12px}#quest b{display:none}#quest .qskip{font-size:11px;padding:2px 7px;margin-left:6px}
   .hcard{min-width:128px;padding:3px 7px 5px;border-radius:14px}.hcard h4{font-size:13px;margin-bottom:2px}.hcard h4 small{font-size:10px}.stats{grid-template-columns:16px 1fr;font-size:11px;gap:0 4px}.bar{height:6px;border-width:1.5px}
   .carepanel{width:min(390px,50vw)}.carebtns{grid-template-columns:1fr 1fr 1fr;gap:6px;padding:4px 8px 8px}.carebtns .btn{font-size:12px;border-radius:12px;box-shadow:0 3px 0 var(--ink)}
   .stats.big{grid-template-columns:20px 1fr}.stats.big em{display:none}.carefoot{padding:4px 8px 8px}.carefoot .btn{font-size:18px;padding:6px}
@@ -265,7 +267,7 @@ button{font-family:inherit;color:inherit}
 <script>
 'use strict';
 // ================= KÄRNA =================
-const APP_VERSION='0.9';
+const APP_VERSION='0.10';
 const CACHE_PREFIX='spel-';
 const SAVE_KEY='hast:save';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1378,7 +1380,9 @@ function quest(id){if(S.questsOff)return;const q=curQuest();if(!q||q.id!==id)ret
   if(S.quest<QUESTS.length)S.quest++;else S.rq=newRQ(q.id);
   const el=$('#quest');el.classList.remove('done');void el.offsetWidth;el.classList.add('done');renderQuest();saveGame()}
 function renderQuest(){const q=curQuest(),el=$('#quest');if(!q||G.comp||G.race||S.questsOff){el.hidden=true;return}el.hidden=false;
-  el.innerHTML='<b>🎯 Uppdrag</b>'+q.t.replace('{h}',hName())+(q.n&&q.id!=='gallop'?` (${q.c||0}/${q.n})`:'')+` · +${q.r} 🪙`}
+  el.innerHTML='<b>🎯 Uppdrag</b>'+q.t.replace('{h}',hName())+(q.n&&q.id!=='gallop'?` (${q.c||0}/${q.n})`:'')+` · +${q.r} 🪙`+'<button type="button" class="qskip">⏭ Hoppa över</button>';
+  el.querySelector('.qskip').onpointerdown=e=>{e.preventDefault();e.stopPropagation();skipQuest()}}
+function skipQuest(){const q=curQuest();if(!q)return;Snd.click();if(S.quest<QUESTS.length)S.quest++;else S.rq=newRQ(q.id);renderQuest();note('Uppdraget hoppades över ⏭ – här är nästa!');saveGame()}
 
 // ---------- kamera ----------
 function updateCamera(dt){const c=G.cam;
