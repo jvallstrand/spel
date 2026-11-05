@@ -265,7 +265,7 @@ body.editing .hud,body.editing .act,body.editing #stickBase,body.editing #stickZ
 <script>
 (function(){
 'use strict';
-const APP_VERSION='0.1';
+const APP_VERSION='0.2';
 const LS_BEST='kl:best',LS_LOOK='kl:look',LS_COMP='kl:comp:',LS_SEASON='kl:season';
 
 document.querySelectorAll('.appver').forEach(el=>el.textContent=APP_VERSION);
@@ -1990,10 +1990,18 @@ function variants(ans){
   for(const w of words){const alts=w.split('/').filter(Boolean);const nx=[];for(const o of out)for(const a of alts){nx.push(o?o+' '+a:a);if(nx.length>200)break;}out=nx;}
   out.push(norm(ans));out.push(norm(ans.replace(/\//g,' ')));return out;
 }
+const allowed=n=>n<=3?0:n<=6?1:n<=11?2:3;
+function lev(a,b){// stavfel: fel bokstav, saknad, extra eller två bokstäver i fel ordning räknas som ett fel
+  if(Math.abs(a.length-b.length)>3)return 99;const d=[];for(let i=0;i<=a.length;i++){d[i]=[i];for(let j=1;j<=b.length;j++)d[i][j]=i?0:j;}
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){const c=a[i-1]===b[j-1]?0:1;d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}return d[a.length][b.length];}
 function check(given,ans){
   const g=norm(given);if(!g)return 0;const vs=variants(ans);
   if(vs.includes(g))return 2;
   if(vs.map(strip).includes(strip(g)))return 1;// rätt men accenten saknas
+  // små stavfel godkänns – som på provet räcker det att man förstått ordet
+  const gg=strip(g).replace(/ /g,'');
+  for(const v of vs){const vv=strip(v).replace(/ /g,'');if(lev(gg,vv)<=allowed(vv.length))return 1;}
   return 0;
 }
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -2029,7 +2037,7 @@ function answer(given,btn){
   const st=wordStat(quiz.L,quiz.w),fb=$('qFb');
   if(res>0){st[0]++;learn.right++;learn.streak++;const bonus=300+Math.min(5,learn.streak)*100;
     if(!quiz.practice){score+=bonus;updHud();}
-    fb.innerHTML=`<span style="color:#4ade80">✅ Rätt!${quiz.practice?'':' +'+bonus+' poäng'}${learn.streak>1?' · '+learn.streak+' i rad 🔥':''}</span>`+(res===1?`<small>Tänk på stavningen: ${esc(quiz.ans)}</small>`:'');}
+    fb.innerHTML=`<span style="color:#4ade80">✅ Rätt!${quiz.practice?'':' +'+bonus+' poäng'}${learn.streak>1?' · '+learn.streak+' i rad 🔥':''}</span>`+(res===1?`<small>Det räknas! Rätt stavning: ${esc(quiz.ans)}</small>`:'');}
   else{st[1]++;learn.wrong++;learn.streak=0;fb.innerHTML=`<span style="color:#f87171">❌ Rätt svar: ${esc(quiz.ans)}</span><small>${esc(quiz.q)} = ${esc(quiz.ans)}</small>`;}
   if(quiz.mode==='mc'){$('qOpts').querySelectorAll('button').forEach(b=>{b.disabled=true;if(b.textContent===quiz.ans)b.classList.add('right');});if(btn&&res===0)btn.classList.add('wrong');}
   else{const inp=$('qIn');inp.classList.add(res>0?'right':'wrong');inp.disabled=true;$('qSend').disabled=true;inp.blur();}
