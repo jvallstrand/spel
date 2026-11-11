@@ -171,7 +171,7 @@ footer b{color:#fff}
 </main>
 
 <script>
-const APP_VERSION='0.1';
+const APP_VERSION='0.2';
 const CACHE_PREFIX='spel-';
 document.querySelectorAll('.appver').forEach(el=>el.textContent=APP_VERSION);
 document.querySelectorAll('.updBtn').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -233,12 +233,18 @@ function check(w,input){
   const m=s.match(/^(el|la|un|una|los|las) (.+)$/);if(m){art=ARTS[m[1]];s=m[2];}
   if(!s)return{ok:false,empty:true};
   const targets=[w.es,...w.alt].map(clean);
-  // skrev ett annat djurs ord → fel
-  const other=WORDS.find(o=>o!==w&&clean(o.es)===s);
-  if(other)return{ok:false,other};
   const exact=targets.includes(s);
-  const tol=s.length>=7?2:(s.length>=4?1:0);
-  const near=!exact&&targets.some(t=>lev(t,s)<=tol);
+  // ljudlikhet: s/z/c(e,i), b/v, c/k/qu, ll/y/j, dubbelbokstäver
+  const key=s2=>s2.replace(/c([ei])/g,'s$1').replace(/z/g,'s').replace(/qu/g,'k').replace(/c/g,'k').replace(/v/g,'b').replace(/ll|y/g,'j').replace(/h/g,'j').replace(/(.)\1+/g,'$1');
+  const k=key(s);
+  const dist=o=>Math.min(...[o.es,...o.alt].map(t=>lev(key(clean(t)),k)));
+  // skrev han ett annat djurs ord (eller något som ligger närmare ett annat djur) → fel
+  const d=exact?0:dist(w);
+  const other=WORDS.find(o=>o!==w&&dist(o)<d||(o!==w&&dist(o)===0));
+  if(other)return{ok:false,other:dist(other)===0?other:null};
+  const tl=key(clean(w.es)).length;
+  const tol=tl>=6?2:(tl>=4?1:0);
+  const near=!exact&&d<=tol;
   if(!exact&&!near)return{ok:false};
   const artOk=!!art&&(art===w.art||w.altArt.includes(art));
   const artWrong=!!art&&!artOk;
@@ -532,7 +538,7 @@ function finish(){
     res.title=n===WORDS.length?'Full pott! 🏆':n>=12?'Snyggt!':n>=8?'Bra kämpat!':'Mer träning!';
     res.score=`${n}/${WORDS.length}`;
     const arts=G.answers.filter(x=>x.r.ok&&x.r.artOk).length;
-    res.sub=`Rätt artikel (el/la) på ${arts} av ${n}. Stavfel och accenter räknas som rätt, precis som på provet.`;
+    res.sub=`Rätt artikel (el/la) på ${arts} av ${n}. Stavfel, accenter och ord som låter rätt räknas som rätt, precis som på provet.`;
     res.list=G.answers.map(x=>{const w=BY[x.id];
       const mark=x.r.ok?'✅':'❌';
       const given=x.given?esc(x.given):'<i>(tomt)</i>';
